@@ -15,8 +15,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SidebarContenuto } from "./sidebar-contenuto";
+import { esci } from "@/lib/auth/actions";
+import { etichettaRuolo } from "@/lib/validazioni/utente";
 
-export function BarraSuperiore() {
+type ProprietaBarraSuperiore = {
+  utente: { email: string; ruolo: string };
+};
+
+export function BarraSuperiore({ utente }: ProprietaBarraSuperiore) {
   const [menuMobileAperto, setMenuMobileAperto] = useState(false);
 
   return (
@@ -35,7 +41,7 @@ export function BarraSuperiore() {
           <SheetHeader className="sr-only">
             <SheetTitle>Navigazione</SheetTitle>
           </SheetHeader>
-          <SidebarContenuto onNavigate={() => setMenuMobileAperto(false)} />
+          <SidebarContenuto onNavigate={() => setMenuMobileAperto(false)} ruolo={utente.ruolo} />
         </SheetContent>
       </Sheet>
 
@@ -51,7 +57,7 @@ export function BarraSuperiore() {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="gap-2 px-2">
+          <Button variant="ghost" className="gap-2 px-2" aria-label={`Menu utente: ${utente.email}`}>
             <Avatar className="size-8">
               <AvatarFallback>
                 <UserRound className="size-4" />
@@ -60,9 +66,12 @@ export function BarraSuperiore() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem disabled>Profilo utente (M1)</DropdownMenuItem>
+          <div className="px-2 py-1.5">
+            <p className="truncate text-sm font-medium">{utente.email}</p>
+            <p className="text-xs text-muted-foreground">{etichettaRuolo(utente.ruolo)}</p>
+          </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem disabled>
+          <DropdownMenuItem onClick={() => esci()}>
             <LogOut />
             Esci
           </DropdownMenuItem>

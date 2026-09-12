@@ -19,6 +19,8 @@ export type VoceNavigazione = {
   /** Milestone in cui il modulo diventa disponibile: finché non è raggiunta il link è disabilitato. */
   disponibileDaMilestone: string;
   attivo: boolean;
+  /** Se presente, la voce è visibile solo a questi ruoli (§6 tabella permessi). Assente = visibile a tutti i ruoli attivi. */
+  soloRuoli?: string[];
 };
 
 // Struttura di navigazione dei moduli funzionali (§6 della specifica). Solo
@@ -35,5 +37,5 @@ export const vociNavigazione: VoceNavigazione[] = [
   { titolo: "Documenti e protocollo", href: "/documenti", icona: FolderArchive, disponibileDaMilestone: "M8", attivo: false },
   { titolo: "Comunicazioni", href: "/comunicazioni", icona: Mail, disponibileDaMilestone: "M9", attivo: false },
   { titolo: "Privacy", href: "/privacy", icona: ShieldCheck, disponibileDaMilestone: "M9", attivo: false },
-  { titolo: "Amministrazione", href: "/amministrazione", icona: Settings, disponibileDaMilestone: "M10", attivo: false },
+  { titolo: "Amministrazione", href: "/amministrazione", icona: Settings, disponibileDaMilestone: "M1", attivo: true, soloRuoli: ["amministratore"] },
 ];

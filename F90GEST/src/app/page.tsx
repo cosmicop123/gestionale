@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
+import { ottieniUtenteCorrente } from "@/lib/auth/session";
 
-export default function RootPage() {
-  // L'autenticazione (M1) deciderà se rimandare a /login o /dashboard in
-  // base alla sessione. Per ora la home rimanda sempre al login.
-  redirect("/login");
+export default async function RootPage() {
+  const utente = await ottieniUtenteCorrente();
+  redirect(utente ? "/dashboard" : "/login");
 }

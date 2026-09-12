@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { unstable_rethrow } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -11,27 +12,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { schemaAccesso, type DatiAccesso } from "@/lib/validazioni/autenticazione";
+import { accedi } from "./actions";
 
 export function LoginForm() {
   const [inAttesa, setInAttesa] = useState(false);
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm<DatiAccesso>({
     resolver: zodResolver(schemaAccesso),
     defaultValues: { email: "", password: "" },
   });
 
-  async function onSubmit() {
-    // L'autenticazione vera e propria (verifica argon2, creazione sessione
-    // httpOnly) è prevista nella milestone M1: qui esiste solo la UI.
+  async function onSubmit(dati: DatiAccesso) {
     setInAttesa(true);
-    await new Promise((r) => setTimeout(r, 400));
-    setInAttesa(false);
-    toast.info("Accesso non ancora attivo", {
-      description: "L'autenticazione sarà disponibile dalla milestone M1.",
-    });
+    try {
+      const esito = await accedi(dati);
+      if ("errore" in esito) {
+        setError("root", { message: esito.errore });
+        toast.error(esito.errore);
+      }
+    } catch (errore) {
+      // redirect() lancia un errore speciale gestito dal framework: va
+      // sempre rilanciato, mai trattato come un vero errore applicativo.
+      unstable_rethrow(errore);
+      toast.error("Errore imprevisto durante l'accesso. Riprova.");
+    } finally {
+      setInAttesa(false);
+    }
   }
 
   return (
@@ -65,6 +75,11 @@ export function LoginForm() {
               <p className="text-sm text-destructive">{errors.password.message}</p>
             )}
           </div>
+          {errors.root && (
+            <p className="text-sm text-destructive" role="alert">
+              {errors.root.message}
+            </p>
+          )}
           <Button type="submit" className="w-full" disabled={inAttesa}>
             {inAttesa && <Loader2 className="animate-spin" />}
             Accedi

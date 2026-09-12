@@ -4,10 +4,11 @@ Gestionale web self-hosted per la gestione di soci, tesseramenti,
 contabilità per cassa, corsi, eventi, libri sociali, documenti e
 adempimenti GDPR di un'associazione culturale italiana.
 
-> **Stato attuale: milestone M0 (setup) completata.** Repository, schema
-> dati e struttura dell'applicazione sono pronti; le funzionalità operative
-> (login reale, gestione soci, contabilità, corsi...) arrivano dalle
-> milestone successive. Vedi `CLAUDE.md` per lo stato di dettaglio.
+> **Stato attuale: milestone M1 completata.** Login reale, ruoli, wizard di
+> primo avvio per l'anagrafica ente, gestione anni sociali e utenti sono
+> attivi. Le funzionalità operative sui soci, la contabilità e i corsi
+> arrivano dalle milestone successive. Vedi `CLAUDE.md` per lo stato di
+> dettaglio.
 
 ## Requisiti
 
@@ -27,8 +28,11 @@ npm run dev                  # http://localhost:3000
 
 Al primo avvio viene creato un utente amministratore con credenziali
 segnaposto stampate a console dal comando `npm run seed`
-(email `admin@example.org`, password `CambiaSubito!2026`): **vanno
-cambiate al primo accesso reale** (funzionalità disponibile da M1).
+(email `admin@example.org`, password `CambiaSubito!2026`). Al primo
+accesso con queste credenziali, l'amministratore viene guidato in un
+wizard per personalizzare i dati dell'associazione; da lì può anche
+creare altri utenti e cambiare la propria password da
+Amministrazione → Utenti → icona chiave.
 
 ## Avvio con Docker (consigliato per l'uso reale)
 

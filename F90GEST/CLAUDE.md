@@ -12,14 +12,53 @@ muove nel codice, non ripete il **cosa**.
 
 ## Stato del progetto
 
-- **Milestone corrente: M0 (setup) completata.** Repo, Next.js, Tailwind,
-  Prisma, Docker, struttura cartelle pronti. Nessuna UI funzionale oltre
-  login (non wired) e layout applicativo.
-- Prossima milestone: **M1 — Auth, ruoli, anagrafica ente (wizard di primo
-  avvio), anni sociali, utenti.**
+- **M0 (setup) e M1 (auth, ruoli, anagrafica ente, anni sociali, utenti)
+  completate.** Login reale con sessioni httpOnly in DB, rate limiting,
+  ruoli applicativi, wizard di primo avvio per personalizzare l'anagrafica
+  ente, gestione anni sociali (creazione/chiusura) e utenti (creazione,
+  modifica ruolo/stato, reset password) da Amministrazione.
+- Prossima milestone: **M2 — Persone e soci**: anagrafica, validazione CF,
+  flusso di ammissione, libro soci con data di riferimento, import Excel,
+  scheda socio, tessere.
 - Le milestone si susseguono una alla volta con conferma dell'utente a fine
   di ognuna (si veda il piano di lavoro nella specifica, §10). Non scrivere
   codice per più di una milestone alla volta.
+
+### Note di continuità per M1 (da tenere presenti in M2+)
+
+- Autenticazione: `src/lib/auth/session.ts` (sessioni httpOnly in DB,
+  pattern "Lucia-style" manuale — cookie = token in chiaro, DB = solo hash
+  SHA-256), `src/lib/auth/password.ts` (argon2), `src/lib/auth/rate-limit.ts`
+  (in-memory, 5 tentativi/15 min per IP+email), `src/lib/auth/richiedi-utente.ts`
+  (`richiediUtente()`/`richiediRuolo([...])`: usarli in OGNI pagina server e
+  OGNI server action che legge/scrive dati sensibili, mai fidarsi della sola
+  UI). `src/proxy.ts` fa solo un controllo ottimistico sulla presenza del
+  cookie (mai una query DB nel proxy): la validazione reale è sempre server-side.
+- Wizard di primo avvio: `Associazione.configurazioneCompletata` blocca
+  l'accesso al resto dell'app per l'amministratore finché non è true
+  (redirect a `/onboarding`, vedi `src/app/(app)/layout.tsx`). Il form
+  ente è condiviso (`src/components/ente/ente-form.tsx`) tra onboarding e
+  la tab "Dati ente" di `/amministrazione`.
+- Pattern form: react-hook-form + zod ovunque; per componenti Radix
+  controllati (Select, Checkbox) usare sempre `Controller`, mai
+  `watch()`/`setValue()` passati come prop — genera un warning del React
+  Compiler ("incompatible library") e rischia UI non aggiornata.
+- Regola di sicurezza applicativa già implementata: non si può mai
+  disattivare o retrocedere l'ultimo amministratore attivo rimasto
+  (`src/lib/utenti/actions.ts`, `modificaUtente`) — replicare lo stesso tipo
+  di guardia per altre invarianti simili quando emergono.
+- `AuditLog` viene già scritto per login/logout/creazione-modifica utenti e
+  modifiche all'anagrafica ente (`src/lib/audit.ts`); non c'è ancora una UI
+  per consultarlo (arriva in M10), ma il pattern (`registraAudit(...)`) va
+  riusato per ogni nuova scrittura sensibile introdotta nelle prossime
+  milestone.
+- Test end-to-end: `e2e/global-setup.ts` ricrea un DB SQLite dedicato
+  (`prisma/e2e-test.db`, mai committato) con migrate+seed ad ogni run, così
+  i test restano riproducibili. Playwright gira a un solo worker
+  (`fullyParallel: false`) perché il flusso critico muta stato condiviso
+  (completa l'onboarding, crea/chiude entità). Estendere questo stesso file
+  di test (`e2e/login.spec.ts`) o aggiungerne altri seguendo lo stesso
+  pattern di global-setup per i flussi critici delle prossime milestone.
 
 ## Decisioni di design confermate (non ridiscutere senza motivo)
 

@@ -8,8 +8,16 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { vociNavigazione } from "./moduli-navigazione";
 
-export function SidebarContenuto({ onNavigate }: { onNavigate?: () => void }) {
+export function SidebarContenuto({
+  onNavigate,
+  ruolo,
+}: {
+  onNavigate?: () => void;
+  /** Ruolo dell'utente corrente: nasconde le voci riservate ad altri ruoli (§6). */
+  ruolo?: string;
+}) {
   const pathname = usePathname();
+  const voci = vociNavigazione.filter((voce) => !voce.soloRuoli || !ruolo || voce.soloRuoli.includes(ruolo));
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -18,7 +26,7 @@ export function SidebarContenuto({ onNavigate }: { onNavigate?: () => void }) {
         <span className="font-semibold tracking-tight">F90GEST</span>
       </div>
       <nav className="flex flex-1 flex-col gap-1">
-        {vociNavigazione.map((voce) => {
+        {voci.map((voce) => {
           const Icona = voce.icona;
           const selezionata = pathname === voce.href;
 

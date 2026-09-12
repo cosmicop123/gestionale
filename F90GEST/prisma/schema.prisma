@@ -1,0 +1,1198 @@
+// ============================================================================
+// GESTIONALE ASSOCIAZIONE CULTURALE FREQUENZE 90
+// Schema Prisma — provider SQLite, scritto per essere migrabile a PostgreSQL
+// senza riscritture: niente feature SQLite-specifiche, niente enum nativi
+// (SQLite non li supporta in Prisma), quindi i campi "enum-like" sono String
+// validati lato applicazione con schemi zod condivisi (vedi src/lib/validazioni).
+// I valori ammessi sono documentati nei commenti accanto al campo.
+//
+// Convenzione createdById: applicata alle entità sostanziali del §5 della
+// specifica di progetto. Le tabelle di puro supporto/giunzione (es.
+// RuoloPersona, CorsoDocente, RiunionePartecipante, Numeratore) non la
+// portano, per non appesantire lo schema senza reale valore di audit
+// aggiuntivo rispetto all'AuditLog generale.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ----------------------------------------------------------------------------
+// 1. ENTE E CONFIGURAZIONE
+// ----------------------------------------------------------------------------
+
+/// Anagrafica dell'ente. Riga singola (mono-ente): il seed ne crea una sola
+/// e l'applicazione impedisce a livello di business logic la creazione di
+/// una seconda riga. Personalizzabile dal wizard di primo avvio (M1).
+model Associazione {
+  id                     String    @id @default(cuid())
+  denominazione          String
+  codiceFiscale          String
+  partitaIva             String?
+  sedeLegaleVia          String
+  sedeLegaleCap          String
+  sedeLegaleComune       String
+  sedeLegaleProvincia    String
+  sedeOperativaVia       String?
+  sedeOperativaCap       String?
+  sedeOperativaComune    String?
+  sedeOperativaProvincia String?
+  pec                    String?
+  email                  String?
+  telefono               String?
+  iban                   String?
+  logoAllegatoId         String?
+  dataCostituzione       DateTime?
+  statutoRiferimento     String? // estremi statuto (data, notaio/registrazione)
+  // iscrizione RUNTS: predisposta pur non essendo iscritti oggi (§2, §7.2)
+  iscrittoRunts          Boolean   @default(false)
+  numeroRunts            String?
+  regimeFiscale          String? // solo descrittivo, nessuna logica fiscale automatica
+  piePaginaRicevute      String? // testo normativo configurabile stampato sulle ricevute
+  firmaPresidenteAllegatoId String?
+  configurazioneCompletata Boolean @default(false) // false finché non si passa dal wizard di primo avvio
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+  createdBy   Utente?  @relation("AssociazioneCreatedBy", fields: [createdById], references: [id])
+}
+
+/// Anno sociale/esercizio: quasi tutte le entità economiche e associative si
+/// agganciano a un AnnoSociale. Non si elimina mai, si può solo chiudere.
+model AnnoSociale {
+  id           String    @id @default(cuid())
+  etichetta    String    @unique // es. "2026/2027"
+  dataInizio   DateTime
+  dataFine     DateTime
+  chiuso       Boolean   @default(false)
+  dataChiusura DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+  createdBy   Utente?  @relation("AnnoSocialeCreatedBy", fields: [createdById], references: [id])
+
+  tesseramenti Tesseramento[]
+  tipiQuota    TipoQuota[]
+  quote        Quota[]
+  saldiConto   SaldoContoAnno[]
+
+  @@index([dataInizio, dataFine])
+}
+
+/// Storico delle cariche sociali, con estremi del verbale di nomina.
+model CaricaSociale {
+  id                   String    @id @default(cuid())
+  personaId            String
+  persona              Persona   @relation(fields: [personaId], references: [id])
+  ruolo                String // Presidente | Vicepresidente | Segretario | Tesoriere | Consigliere
+  dataInizioMandato    DateTime
+  dataFineMandato      DateTime?
+  estremiVerbaleNomina String?
+  riunioneNominaId     String?
+  riunioneNomina       Riunione? @relation(fields: [riunioneNominaId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("CaricaSocialeCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  @@index([personaId])
+  @@index([ruolo])
+}
+
+/// Utente applicativo (login). Collegato a una Persona ma distinto da essa.
+model Utente {
+  id            String    @id @default(cuid())
+  personaId     String?   @unique
+  persona       Persona?  @relation("PersonaUtente", fields: [personaId], references: [id])
+  email         String    @unique
+  passwordHash  String // argon2
+  ruolo         String // amministratore | segreteria | tesoriere | docente | sola_lettura
+  attivo        Boolean   @default(true)
+  ultimoAccesso DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("UtenteCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  sessioni Sessione[]
+
+  // relazioni inverse "creato da questo utente", una per ogni entità con createdById
+  utentiCreati            Utente[]              @relation("UtenteCreatedBy")
+  personeCreate           Persona[]             @relation("PersonaCreatedBy")
+  associazioniCreate      Associazione[]        @relation("AssociazioneCreatedBy")
+  anniSocialiCreati       AnnoSociale[]         @relation("AnnoSocialeCreatedBy")
+  cariceSocialiCreate     CaricaSociale[]       @relation("CaricaSocialeCreatedBy")
+  sociCreati              Socio[]               @relation("SocioCreatedBy")
+  sociStatoCreati         SocioStato[]          @relation("SocioStatoCreatedBy")
+  tesseramentiCreati      Tesseramento[]        @relation("TesseramentoCreatedBy")
+  tipiQuotaCreati         TipoQuota[]           @relation("TipoQuotaCreatedBy")
+  quoteCreate             Quota[]               @relation("QuotaCreatedBy")
+  pagamentiCreati         Pagamento[]           @relation("PagamentoCreatedBy")
+  movimentiCreati         MovimentoPrimaNota[]  @relation("MovimentoCreatedBy")
+  ricevuteCreate          Ricevuta[]            @relation("RicevutaCreatedBy")
+  scadenzeCreate          Scadenza[]            @relation("ScadenzaCreatedBy")
+  corsiCreati             Corso[]               @relation("CorsoCreatedBy")
+  iscrizioniCorsoCreate   IscrizioneCorso[]     @relation("IscrizioneCorsoCreatedBy")
+  attestatiCreati         Attestato[]           @relation("AttestatoCreatedBy")
+  eventiCreati            Evento[]              @relation("EventoCreatedBy")
+  sponsorCreati           SponsorContributo[]   @relation("SponsorCreatedBy")
+  riunioniCreate          Riunione[]            @relation("RiunioneCreatedBy")
+  protocolliCreati        Protocollo[]          @relation("ProtocolloCreatedBy")
+  documentiCreati         Documento[]           @relation("DocumentoCreatedBy")
+  comunicazioniCreate     Comunicazione[]       @relation("ComunicazioneCreatedBy")
+  allegatiCreati          Allegato[]            @relation("AllegatoCreatedBy")
+  auditLogEventi          AuditLog[]            @relation("AuditLogUtente")
+  presenzeRilevate        Presenza[]            @relation("PresenzaRilevataDa")
+
+  @@index([email])
+}
+
+/// Sessione di login (approccio Lucia-style): sessione in DB revocabile
+/// immediatamente, es. alla sospensione di un utente.
+model Sessione {
+  id          String   @id // token opaco generato server-side
+  utenteId    String
+  utente      Utente   @relation(fields: [utenteId], references: [id])
+  ipCreazione String?
+  userAgent   String?
+  scadenza    DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([utenteId])
+  @@index([scadenza])
+}
+
+/// Coppie chiave/valore per numerazioni, soglie e testi standard non
+/// hardcoded (es. soglia bollo, soglia allegato obbligatorio uscite).
+model Parametro {
+  chiave      String   @id
+  valore      String
+  descrizione String?
+  updatedAt   DateTime @updatedAt
+}
+
+/// Contatore centralizzato per ogni numerazione progressiva del sistema
+/// (ricevute, protocollo entrata/uscita, libro soci, attestati...).
+/// L'incremento avviene sempre dentro una transazione DB per evitare
+/// duplicati/buchi in caso di scritture concorrenti.
+model Numeratore {
+  id              String @id @default(cuid())
+  entita          String // "ricevuta" | "protocollo_entrata" | "protocollo_uscita" | "libro_soci" | "attestato" | ...
+  annoRiferimento Int? // null per numerazioni non annuali (es. libro soci)
+  ultimoNumero    Int    @default(0)
+
+  @@unique([entita, annoRiferimento])
+}
+
+// ----------------------------------------------------------------------------
+// 2. PERSONE E SOCI
+// ----------------------------------------------------------------------------
+
+/// Anagrafica unica di persona fisica: mai duplicata, indipendentemente dai
+/// ruoli che assume nel tempo. `isMinore` NON è persistito: va derivato a
+/// runtime da dataNascita, per evitare disallineamenti nel tempo.
+model Persona {
+  id                 String    @id @default(cuid())
+  nome               String
+  cognome            String
+  codiceFiscale      String?   @unique // validazione algoritmica completa lato applicazione (zod)
+  dataNascita        DateTime?
+  comuneNascita      String?
+  provinciaNascita   String?
+  sesso              String? // M | F — solo per il controllo di coerenza del CF
+  residenzaVia       String?
+  residenzaCap       String?
+  residenzaComune    String?
+  residenzaProvincia String?
+  email              String?
+  telefono           String?
+  note               String?
+  fotoAllegatoId     String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("PersonaCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  utente                 Utente?                @relation("PersonaUtente")
+  ruoli                  RuoloPersona[]
+  socio                  Socio?
+  relazioniComeMinore    RelazioneFamiliare[]   @relation("MinoreRelazione")
+  relazioniComeGenitore  RelazioneFamiliare[]   @relation("GenitoreRelazione")
+  cariche                CaricaSociale[]
+  quote                  Quota[]
+  pagamentiControparte   Pagamento[]            @relation("PagamentoControparte")
+  movimentiControparte   MovimentoPrimaNota[]   @relation("MovimentoControparte")
+  ricevute               Ricevuta[]
+  corsiComeDocente       CorsoDocente[]
+  lezioniAssegnate       Lezione[]              @relation("LezioneDocenteEffettivo")
+  iscrizioniCorso        IscrizioneCorso[]
+  partecipazioniEvento   PartecipazioneEvento[]
+  turniVolontario        TurnoVolontario[]
+  sponsorizzazioni       SponsorContributo[]
+  consensi               Consenso[]             @relation("ConsensoPersona")
+  consensiFirmatiComeGenitore Consenso[]         @relation("ConsensoFirmaGenitore")
+  richiesteInteressato   RichiestaInteressato[]
+  partecipazioniRiunione RiunionePartecipante[] @relation("RiunionePartecipantePersona")
+  delegheRicevute        RiunionePartecipante[] @relation("Delega")
+  comunicazioniRicevute  ComunicazioneInvio[]
+
+  @@index([cognome, nome])
+  @@index([codiceFiscale])
+}
+
+/// Relazione minore → esercente la responsabilità genitoriale. Un minore
+/// può avere fino a due genitori/tutori collegati (§7.5).
+model RelazioneFamiliare {
+  id         String   @id @default(cuid())
+  minoreId   String
+  minore     Persona  @relation("MinoreRelazione", fields: [minoreId], references: [id])
+  genitoreId String? // valorizzato se il genitore/tutore è anche una Persona censita
+  genitore   Persona? @relation("GenitoreRelazione", fields: [genitoreId], references: [id])
+  // dati liberi, usati quando il genitore non è (ancora) una Persona censita
+  genitoreNomeCognome   String?
+  genitoreCodiceFiscale String?
+  genitoreEmail         String?
+  genitoreTelefono      String?
+  gradoParentela        String // genitore | tutore | altro_esercente
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([minoreId])
+}
+
+/// Ruolo multi-valore di una persona (una persona può essere più cose
+/// contemporaneamente). Attivo/non attivo per gestire la fine di un ruolo
+/// senza perderne lo storico.
+model RuoloPersona {
+  id         String    @id @default(cuid())
+  personaId  String
+  persona    Persona   @relation(fields: [personaId], references: [id])
+  tipo       String // socio | tesserato | volontario | docente | genitore | collaboratore | fornitore | sponsor | donatore | contatto_istituzionale
+  dataInizio DateTime  @default(now())
+  dataFine   DateTime?
+  attivo     Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([personaId, tipo])
+}
+
+/// Rapporto associativo. APPEND-ONLY nei dati identificativi: numeroLibroSoci,
+/// persona e data di ammissione non si modificano mai dopo la creazione.
+/// Lo stato corrente NON si aggiorna qui: vive in SocioStato (storico), così
+/// il libro soci è ricostruibile a qualunque data di riferimento (§7.1).
+model Socio {
+  id                     String    @id @default(cuid())
+  personaId              String    @unique
+  persona                Persona   @relation(fields: [personaId], references: [id])
+  numeroLibroSoci        Int       @unique // assegnato dal Numeratore "libro_soci" alla delibera, mai riassegnato
+  categoria              String // ordinario | sostenitore | onorario | junior (configurabile via Parametro)
+  dataDomandaAmmissione  DateTime
+  dataDeliberaAmmissione DateTime
+  riunioneDeliberaId     String?
+  riunioneDelibera       Riunione? @relation("SocioRiunioneDelibera", fields: [riunioneDeliberaId], references: [id])
+  dataDecorrenza         DateTime
+
+  createdAt   DateTime @default(now())
+  createdById String?
+  createdBy   Utente?  @relation("SocioCreatedBy", fields: [createdById], references: [id])
+  // niente updatedAt/deletedAt: il record è immutabile per costruzione
+
+  storicoStati SocioStato[]
+  tesseramenti Tesseramento[]
+
+  @@index([numeroLibroSoci])
+}
+
+/// Storico stati del socio, APPEND-ONLY: ogni transizione (in_attesa →
+/// attivo → sospeso/cessato) è una nuova riga con periodo di validità.
+/// La query "chi era socio attivo alla data X" filtra su questa tabella,
+/// non su un campo mutabile — è la base del libro soci dinamico (§7.1, §6).
+model SocioStato {
+  id              String    @id @default(cuid())
+  socioId         String
+  socio           Socio     @relation(fields: [socioId], references: [id])
+  stato           String // in_attesa | attivo | sospeso | cessato
+  dataInizio      DateTime
+  dataFine        DateTime? // null = stato corrente
+  motivo          String? // per cessazione: recesso | decadenza_morosita | esclusione | decesso
+  estremiDelibera String?
+  riunioneId      String?
+  riunione        Riunione? @relation("SocioStatoRiunione", fields: [riunioneId], references: [id])
+
+  createdAt   DateTime @default(now())
+  createdById String?
+  createdBy   Utente?  @relation("SocioStatoCreatedBy", fields: [createdById], references: [id])
+
+  @@index([socioId, dataInizio])
+}
+
+/// Tesseramento per anno sociale: numero tessera, quota applicata, QR e PDF.
+model Tesseramento {
+  id            String      @id @default(cuid())
+  socioId       String
+  socio         Socio       @relation(fields: [socioId], references: [id])
+  annoSocialeId String
+  annoSociale   AnnoSociale @relation(fields: [annoSocialeId], references: [id])
+  numeroTessera String      @unique
+  quotaId       String?     @unique
+  quota         Quota?      @relation(fields: [quotaId], references: [id])
+  dataEmissione DateTime?
+  canale        String // sportello | online
+  qrToken       String      @unique @default(cuid())
+  pdfAllegatoId String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("TesseramentoCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  @@unique([socioId, annoSocialeId])
+  @@index([numeroTessera])
+}
+
+// ----------------------------------------------------------------------------
+// 3. QUOTE, PAGAMENTI, CONTABILITÀ
+// ----------------------------------------------------------------------------
+
+model TipoQuota {
+  id                        String      @id @default(cuid())
+  descrizione               String
+  importo                   Decimal
+  annoSocialeId             String
+  annoSociale               AnnoSociale @relation(fields: [annoSocialeId], references: [id])
+  categoriaSocioApplicabile String? // null = tutte le categorie
+  // valori ammessi di natura fiscale (§7.3): quota_associativa |
+  // corrispettivo_specifico | erogazione_liberale | contributo_pubblico |
+  // contributo_privato | sponsorizzazione | raccolta_fondi_occasionale |
+  // attivita_commerciale
+  naturaFiscale             String
+  ricorrente                Boolean     @default(false)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("TipoQuotaCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  quote Quota[]
+
+  @@index([annoSocialeId])
+}
+
+/// Quota dovuta da una persona. `naturaFiscale` è denormalizzata dal
+/// TipoQuota al momento della creazione (immutabile anche se il TipoQuota
+/// cambia in seguito), perché deve restare coerente con Pagamento/Ricevuta
+/// già emessi collegati a questa quota.
+model Quota {
+  id                 String                @id @default(cuid())
+  personaId          String
+  persona            Persona               @relation(fields: [personaId], references: [id])
+  tipoQuotaId        String
+  tipoQuota          TipoQuota             @relation(fields: [tipoQuotaId], references: [id])
+  annoSocialeId      String
+  annoSociale        AnnoSociale           @relation(fields: [annoSocialeId], references: [id])
+  importo            Decimal
+  scadenza           DateTime
+  stato              String // da_pagare | pagata | parziale | esente | stornata
+  naturaFiscale      String // stessi valori ammessi di TipoQuota.naturaFiscale
+  iscrizioneCorsoId  String?               @unique
+  iscrizioneCorso    IscrizioneCorso?      @relation(fields: [iscrizioneCorsoId], references: [id])
+  iscrizioneEventoId String?               @unique
+  iscrizioneEvento   PartecipazioneEvento? @relation(fields: [iscrizioneEventoId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("QuotaCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  pagamenti    Pagamento[]
+  tesseramento Tesseramento?
+
+  @@index([personaId, stato])
+  @@index([annoSocialeId])
+}
+
+model Conto {
+  id   String @id @default(cuid())
+  nome String // "Cassa contanti" | "Conto corrente ..."
+  tipo String // cassa | banca
+  iban String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  saldiAnno SaldoContoAnno[]
+  pagamenti Pagamento[]
+  movimenti MovimentoPrimaNota[]
+}
+
+/// Saldo iniziale/finale di un conto per anno sociale. Il saldo iniziale
+/// dell'esercizio N coincide sempre col saldo finale dell'esercizio N-1
+/// (riporto automatico, §7.2): la modifica manuale del saldo iniziale è
+/// bloccata a livello applicativo quando l'anno precedente è `chiuso`.
+model SaldoContoAnno {
+  id            String      @id @default(cuid())
+  contoId       String
+  conto         Conto       @relation(fields: [contoId], references: [id])
+  annoSocialeId String
+  annoSociale   AnnoSociale @relation(fields: [annoSocialeId], references: [id])
+  saldoIniziale Decimal
+  saldoFinale   Decimal? // valorizzato alla chiusura dell'anno
+
+  @@unique([contoId, annoSocialeId])
+}
+
+model Pagamento {
+  id                 String    @id @default(cuid())
+  quotaId            String?
+  quota              Quota?    @relation(fields: [quotaId], references: [id])
+  causaleLibera      String? // per pagamenti non legati a una Quota (es. donazioni spontanee)
+  controparteId      String?
+  controparte        Persona?  @relation("PagamentoControparte", fields: [controparteId], references: [id])
+  importo            Decimal
+  data               DateTime
+  metodo             String // contanti | bonifico | pos | satispay | paypal | altro
+  contoId            String
+  conto              Conto     @relation(fields: [contoId], references: [id])
+  riferimentoEsterno String?
+  note               String?
+
+  createdAt   DateTime  @default(now())
+  createdById String?
+  createdBy   Utente?   @relation("PagamentoCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  ricevuta           Ricevuta?
+  movimentoPrimaNota MovimentoPrimaNota? // generato automaticamente nella stessa transazione del pagamento
+
+  @@index([data])
+}
+
+/// Prima nota. APPEND-ONLY: nessuna riga si aggiorna o cancella dopo la
+/// creazione. Una rettifica genera una NUOVA riga di segno opposto che
+/// referenzia l'originale (`stornoDiId`), mai un UPDATE/DELETE.
+model MovimentoPrimaNota {
+  id                                String   @id @default(cuid())
+  data                              DateTime
+  tipo                              String // entrata | uscita
+  importo                           Decimal
+  contoId                           String
+  conto                             Conto    @relation(fields: [contoId], references: [id])
+  causale                           String
+  categoriaRendiconto               String // voce del Mod. D (DM 5/3/2020) — vedi Parametro per l'elenco voci
+  controparteId                     String?
+  controparte                       Persona? @relation("MovimentoControparte", fields: [controparteId], references: [id])
+  controparteFornitore              String? // testo libero se non è una Persona censita
+  descrizione                       String?
+  allegatoGiustificativoId          String? // Allegato — obbligatorio per uscite sopra soglia Parametro (controllo applicativo)
+  motivazioneAssenzaGiustificativo  String? // richiesto se sopra soglia e allegato assente
+  ricavoCommerciale                 Boolean  @default(false) // alimenta il contatore "entrate potenzialmente commerciali" (§7.3)
+
+  pagamentoId     String?              @unique
+  pagamento       Pagamento?           @relation(fields: [pagamentoId], references: [id])
+  ricevutaId      String?              @unique
+  ricevuta        Ricevuta?            @relation(fields: [ricevutaId], references: [id])
+  eventoId        String?
+  evento          Evento?              @relation(fields: [eventoId], references: [id])
+  corsoId         String?
+  corso           Corso?               @relation(fields: [corsoId], references: [id])
+  raccoltaFondiId String?
+  raccoltaFondi   RaccoltaFondi?       @relation(fields: [raccoltaFondiId], references: [id])
+
+  stornoDiId   String?              @unique
+  stornoDi     MovimentoPrimaNota?  @relation("StornoMovimento", fields: [stornoDiId], references: [id])
+  stornatoDa   MovimentoPrimaNota?  @relation("StornoMovimento")
+  motivoStorno String?
+
+  createdAt   DateTime @default(now())
+  createdById String?
+  createdBy   Utente?  @relation("MovimentoCreatedBy", fields: [createdById], references: [id])
+  // niente updatedAt/deletedAt: append-only per costruzione
+
+  @@index([data])
+  @@index([contoId, data])
+  @@index([categoriaRendiconto])
+}
+
+/// Ricevuta. APPEND-ONLY: numerazione progressiva per anno solare senza
+/// buchi (via Numeratore), mai cancellata — l'annullamento è uno stato
+/// tracciato con motivo, non una delete (§7.4).
+model Ricevuta {
+  id                  String    @id @default(cuid())
+  numero              Int
+  annoSolare          Int
+  data                DateTime
+  intestatarioId      String
+  intestatario        Persona   @relation(fields: [intestatarioId], references: [id])
+  causale             String
+  importo             Decimal
+  naturaFiscale       String // stessi valori ammessi di Quota.naturaFiscale
+  bolloApplicato      Boolean   @default(false) // 2,00 € oltre 77,47 €, quando la natura fiscale lo prevede
+  importoBollo        Decimal?
+  testoNormativoPiede String?
+  pdfAllegatoId       String?
+  stato               String    @default("emessa") // emessa | annullata
+  motivoAnnullamento  String?
+
+  pagamentoId String?    @unique
+  pagamento   Pagamento? @relation(fields: [pagamentoId], references: [id])
+
+  createdAt   DateTime @default(now())
+  createdById String?
+  createdBy   Utente?  @relation("RicevutaCreatedBy", fields: [createdById], references: [id])
+  // niente updatedAt/deletedAt: append-only
+
+  movimentoPrimaNota MovimentoPrimaNota?
+
+  @@unique([numero, annoSolare])
+  @@index([intestatarioId])
+}
+
+model Scadenza {
+  id                String    @id @default(cuid())
+  titolo            String
+  tipo              String // approvazione_bilancio | convocazione_assemblea | rinnovo_cariche | versamento | pratica_siae | scadenza_tesseramenti | altro
+  dataScadenza      DateTime
+  ricorrente        Boolean   @default(false)
+  completata        Boolean   @default(false)
+  dataCompletamento DateTime?
+  note              String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("ScadenzaCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  @@index([dataScadenza, completata])
+}
+
+// ----------------------------------------------------------------------------
+// 4. CORSI E ATTIVITÀ FORMATIVE
+// ----------------------------------------------------------------------------
+
+model Corso {
+  id                                 String    @id @default(cuid())
+  titolo                             String
+  edizione                           String?
+  descrizione                        String?
+  destinatari                        String?
+  sede                               String?
+  dataInizio                         DateTime
+  dataFine                           DateTime?
+  numeroLezioniPreviste              Int?
+  oreTotali                          Decimal?
+  capienzaMassima                    Int?
+  quotaPartecipazione                Decimal? // null/0 = gratuito
+  stato                              String    @default("bozza") // bozza | aperto_iscrizioni | in_corso | concluso | annullato
+  percentualeMinimaPresenzaAttestato Decimal   @default(70)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("CorsoCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  docenti     CorsoDocente[]
+  moduli      Modulo[]
+  lezioni     Lezione[]
+  iscrizioni  IscrizioneCorso[]
+  questionari Questionario[]
+  movimenti   MovimentoPrimaNota[]
+  materiali   DocumentoCorso[]
+
+  @@index([stato])
+}
+
+model CorsoDocente {
+  id        String  @id @default(cuid())
+  corsoId   String
+  corso     Corso   @relation(fields: [corsoId], references: [id])
+  personaId String
+  persona   Persona @relation(fields: [personaId], references: [id])
+
+  @@unique([corsoId, personaId])
+}
+
+model Modulo {
+  id        String @id @default(cuid())
+  corsoId   String
+  corso     Corso  @relation(fields: [corsoId], references: [id])
+  numero    Int
+  titolo    String
+  argomenti String?
+
+  lezioni Lezione[]
+
+  @@unique([corsoId, numero])
+}
+
+model Lezione {
+  id                 String    @id @default(cuid())
+  corsoId            String
+  corso              Corso     @relation(fields: [corsoId], references: [id])
+  moduloId           String?
+  modulo             Modulo?   @relation(fields: [moduloId], references: [id])
+  numeroProgressivo  Int
+  titolo             String?
+  argomenti          String?
+  data               DateTime
+  oraInizio          String // "HH:mm"
+  oraFine            String
+  durataOre          Decimal
+  docenteEffettivoId String?
+  docenteEffettivo   Persona?  @relation("LezioneDocenteEffettivo", fields: [docenteEffettivoId], references: [id])
+  aulaSede           String?
+  stato              String    @default("programmata") // programmata | svolta | rinviata | annullata
+  noteDocente        String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  presenze Presenza[]
+
+  @@unique([corsoId, numeroProgressivo])
+  @@index([data])
+}
+
+model IscrizioneCorso {
+  id             String   @id @default(cuid())
+  personaId      String
+  persona        Persona  @relation(fields: [personaId], references: [id])
+  corsoId        String
+  corso          Corso    @relation(fields: [corsoId], references: [id])
+  dataIscrizione DateTime @default(now())
+  canale         String // form_online | sportello | whatsapp_importato
+  stato          String   @default("preiscritto") // preiscritto | confermato | in_lista_attesa | ritirato
+  note           String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("IscrizioneCorsoCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  quota                Quota?
+  presenze             Presenza[]
+  attestato            Attestato?
+  risposteQuestionario RispostaQuestionario[]
+
+  @@unique([personaId, corsoId])
+  @@index([corsoId, stato])
+}
+
+/// Vincolo di unicità (lezione, iscrizione) come richiesto dal §5.4.
+model Presenza {
+  id           String   @id @default(cuid())
+  lezioneId    String
+  lezione      Lezione  @relation(fields: [lezioneId], references: [id])
+  iscrizioneId String
+  iscrizione   IscrizioneCorso @relation(fields: [iscrizioneId], references: [id])
+  stato        String // presente | assente | giustificato | ritardo
+  oraIngresso  String?
+  rilevataDaId String?
+  rilevataDa   Utente?  @relation("PresenzaRilevataDa", fields: [rilevataDaId], references: [id])
+  metodo       String // appello_manuale | qr | firma
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([lezioneId, iscrizioneId])
+}
+
+model Attestato {
+  id                  String   @id @default(cuid())
+  iscrizioneId        String   @unique
+  iscrizione          IscrizioneCorso @relation(fields: [iscrizioneId], references: [id])
+  numeroProgressivo   Int      @unique
+  oreFrequentate      Decimal
+  percentualePresenza Decimal
+  dataEmissione       DateTime
+  pdfAllegatoId       String?
+
+  createdAt   DateTime @default(now())
+  createdById String?
+  createdBy   Utente?  @relation("AttestatoCreatedBy", fields: [createdById], references: [id])
+}
+
+model Questionario {
+  id       String  @id @default(cuid())
+  corsoId  String
+  corso    Corso   @relation(fields: [corsoId], references: [id])
+  titolo   String
+  attivo   Boolean @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  domande  DomandaQuestionario[]
+  risposte RispostaQuestionario[]
+}
+
+model DomandaQuestionario {
+  id             String       @id @default(cuid())
+  questionarioId String
+  questionario   Questionario @relation(fields: [questionarioId], references: [id])
+  ordine         Int
+  testo          String
+  tipo           String // scala | aperta
+
+  rispostePuntuali RispostaDomanda[]
+
+  @@unique([questionarioId, ordine])
+}
+
+model RispostaQuestionario {
+  id               String       @id @default(cuid())
+  questionarioId   String
+  questionario     Questionario @relation(fields: [questionarioId], references: [id])
+  iscrizioneId     String
+  iscrizione       IscrizioneCorso @relation(fields: [iscrizioneId], references: [id])
+  tokenPersonale   String       @unique @default(cuid())
+  dataCompilazione DateTime?
+
+  createdAt DateTime @default(now())
+
+  risposte RispostaDomanda[]
+
+  @@unique([questionarioId, iscrizioneId])
+}
+
+model RispostaDomanda {
+  id                     String               @id @default(cuid())
+  rispostaQuestionarioId String
+  rispostaQuestionario   RispostaQuestionario @relation(fields: [rispostaQuestionarioId], references: [id])
+  domandaId              String
+  domanda                DomandaQuestionario  @relation(fields: [domandaId], references: [id])
+  valoreScala            Int?
+  testoLibero            String?
+
+  @@unique([rispostaQuestionarioId, domandaId])
+}
+
+/// Materiali/allegati collegati a un corso (join verso Allegato generico).
+model DocumentoCorso {
+  id         String @id @default(cuid())
+  corsoId    String
+  corso      Corso  @relation(fields: [corsoId], references: [id])
+  allegatoId String
+
+  createdAt DateTime @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// 5. EVENTI E ATTIVITÀ NON FORMATIVE
+// ----------------------------------------------------------------------------
+
+model Evento {
+  id           String    @id @default(cuid())
+  titolo       String
+  tipologia    String // spettacolo | festa | cineforum | conferenza | raccolta_fondi
+  dataInizio   DateTime
+  dataFine     DateTime?
+  luogo        String?
+  descrizione  String?
+  tipoIngresso String // gratuito | oblazione_volontaria | corrispettivo
+  capienza     Int?
+  stato        String    @default("bozza") // bozza | programmato | in_corso | concluso | annullato
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("EventoCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  praticaSiae      PraticaSIAE?
+  partecipazioni   PartecipazioneEvento[]
+  turniVolontari   TurnoVolontario[]
+  sponsorizzazioni SponsorContributo[]
+  movimenti        MovimentoPrimaNota[]
+  raccolteFondi    RaccoltaFondi[]
+
+  @@index([stato, dataInizio])
+}
+
+model PraticaSIAE {
+  id              String    @id @default(cuid())
+  eventoId        String    @unique
+  evento          Evento    @relation(fields: [eventoId], references: [id])
+  tipoPermesso    String
+  dataInvio       DateTime?
+  protocollo      String?
+  minimoGarantito Decimal?
+  importoPagato   Decimal?
+  conguaglio      Decimal?
+  borderoAllegatoId String?
+  stato           String    @default("da_predisporre") // da_predisporre | inviata | approvata | chiusa
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  programmaMusicale ProgrammaMusicalePratica[]
+}
+
+/// Archivio riutilizzabile di brani per il programma musicale SIAE.
+model BranoMusicale {
+  id            String  @id @default(cuid())
+  titolo        String
+  autore        String
+  editore       String?
+  durataSecondi Int?
+
+  deletedAt DateTime?
+
+  utilizziPratiche ProgrammaMusicalePratica[]
+}
+
+model ProgrammaMusicalePratica {
+  id               String        @id @default(cuid())
+  praticaId        String
+  pratica          PraticaSIAE   @relation(fields: [praticaId], references: [id])
+  branoId          String
+  brano            BranoMusicale @relation(fields: [branoId], references: [id])
+  ordineEsecuzione Int?
+  note             String?
+
+  @@unique([praticaId, branoId])
+}
+
+model PartecipazioneEvento {
+  id                 String   @id @default(cuid())
+  eventoId           String
+  evento             Evento   @relation(fields: [eventoId], references: [id])
+  personaId          String? // null se partecipante non censito (usare nomeLibero)
+  persona            Persona? @relation(fields: [personaId], references: [id])
+  nomeLibero         String?
+  bigliettoOblazione Decimal?
+  checkInQr          Boolean  @default(false)
+  dataCheckIn        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  quota Quota?
+
+  @@index([eventoId])
+}
+
+model TurnoVolontario {
+  id           String   @id @default(cuid())
+  eventoId     String
+  evento       Evento   @relation(fields: [eventoId], references: [id])
+  volontarioId String
+  volontario   Persona  @relation(fields: [volontarioId], references: [id])
+  mansione     String
+  oraInizio    String?
+  oraFine      String?
+  stato        String   @default("proposto") // proposto | confermato | rifiutato
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventoId])
+}
+
+model SponsorContributo {
+  id             String         @id @default(cuid())
+  soggettoId     String?
+  soggetto       Persona?       @relation(fields: [soggettoId], references: [id])
+  soggettoLibero String? // ragione sociale se non censito come Persona
+  tipo           String // sponsorizzazione | erogazione_liberale | contributo_pubblico
+  importo        Decimal
+  data           DateTime
+  eventoId       String?
+  evento         Evento?        @relation(fields: [eventoId], references: [id])
+  raccoltaFondiId String?
+  raccoltaFondi  RaccoltaFondi? @relation(fields: [raccoltaFondiId], references: [id])
+  stato          String         @default("richiesto") // richiesto | accettato | incassato | rifiutato
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("SponsorCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+}
+
+model RaccoltaFondi {
+  id            String    @id @default(cuid())
+  denominazione String
+  periodoInizio DateTime
+  periodoFine   DateTime?
+  eventoId      String?
+  evento        Evento?   @relation(fields: [eventoId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  movimenti MovimentoPrimaNota[]
+  sponsor   SponsorContributo[]
+}
+
+// ----------------------------------------------------------------------------
+// 6. LIBRI SOCIALI, DOCUMENTI, COMUNICAZIONI
+// ----------------------------------------------------------------------------
+
+/// Modello unificato per Assemblea e Consiglio Direttivo: condividono quasi
+/// tutti i campi (data, sede, o.d.g., quorum, verbale); il `tipo` distingue
+/// le due fattispecie mantenendo un'unica numerazione progressiva per tipo.
+model Riunione {
+  id                           String    @id @default(cuid())
+  tipo                         String // assemblea | direttivo
+  data                         DateTime
+  ora                          String?
+  sede                         String?
+  ordineDelGiorno              String
+  quorumCostitutivoVerificato  Boolean?
+  quorumDeliberativoVerificato Boolean?
+  numeroProgressivo            Int // numerazione progressiva verbali, per tipo
+  verbaleTesto                 String?
+  verbalePdfAllegatoId         String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("RiunioneCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  partecipanti        RiunionePartecipante[]
+  delibere            Delibera[]
+  cariceNominate       CaricaSociale[]
+  sociAmmessi          Socio[]      @relation("SocioRiunioneDelibera")
+  sociStatoModificati  SocioStato[] @relation("SocioStatoRiunione")
+
+  @@unique([tipo, numeroProgressivo])
+  @@index([data])
+}
+
+model RiunionePartecipante {
+  id           String   @id @default(cuid())
+  riunioneId   String
+  riunione     Riunione @relation(fields: [riunioneId], references: [id])
+  personaId    String
+  persona      Persona  @relation("RiunionePartecipantePersona", fields: [personaId], references: [id])
+  convocato    Boolean  @default(true)
+  presente     Boolean  @default(false)
+  delegatoDaId String?
+  delegatoDa   Persona? @relation("Delega", fields: [delegatoDaId], references: [id])
+
+  @@unique([riunioneId, personaId])
+}
+
+model Delibera {
+  id             String   @id @default(cuid())
+  riunioneId     String
+  riunione       Riunione @relation(fields: [riunioneId], references: [id])
+  oggetto        String
+  esito          String // approvata | respinta | rinviata
+  votiFavorevoli Int?
+  votiContrari   Int?
+  votiAstenuti   Int?
+
+  createdAt DateTime @default(now())
+}
+
+/// Registro protocollo entrata/uscita, numerazione progressiva annuale
+/// (via Numeratore).
+model Protocollo {
+  id                    String   @id @default(cuid())
+  numero                Int
+  annoRiferimento       Int
+  tipo                  String // entrata | uscita
+  data                  DateTime
+  mittenteDestinatario  String
+  oggetto               String
+  mezzo                 String // pec | email | raccomandata | brevi_manu
+  allegatoId            String?
+  classificazione       String?
+
+  createdAt   DateTime @default(now())
+  createdById String?
+  createdBy   Utente?  @relation("ProtocolloCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([tipo, numero, annoRiferimento])
+}
+
+model Documento {
+  id         String    @id @default(cuid())
+  titolo     String
+  categoria  String // statuto | atto_costitutivo | verbali | bilanci | contratti | assicurazioni | moduli | convenzioni
+  allegatoId String
+  scadenza   DateTime?
+  versione   Int       @default(1)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("DocumentoCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  @@index([categoria])
+  @@index([scadenza])
+}
+
+model Comunicazione {
+  id                String  @id @default(cuid())
+  titolo            String
+  segmento          String // soci_attivi | iscritti_corso | morosi | volontari | personalizzato
+  segmentoParametri String? // JSON con eventuali filtri (es. id corso)
+  templateOggetto   String
+  templateCorpo     String // con variabili {{nome}}, {{corso}}, {{importo}}, {{scadenza}}
+  stato             String  @default("bozza") // bozza | in_invio | inviata
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("ComunicazioneCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  invii ComunicazioneInvio[]
+}
+
+model ComunicazioneInvio {
+  id                String        @id @default(cuid())
+  comunicazioneId   String
+  comunicazione     Comunicazione @relation(fields: [comunicazioneId], references: [id])
+  personaId         String
+  persona           Persona       @relation(fields: [personaId], references: [id])
+  emailDestinatario String
+  stato             String        @default("in_coda") // in_coda | inviata | fallita | non_inviata_per_consenso_revocato
+  dataInvio         DateTime?
+  erroreMessaggio   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([comunicazioneId, stato])
+}
+
+// ----------------------------------------------------------------------------
+// 7. PRIVACY E AUDIT
+// ----------------------------------------------------------------------------
+
+model Informativa {
+  id                String   @id @default(cuid())
+  versione          String   @unique
+  testo             String
+  dataPubblicazione DateTime
+
+  consensi Consenso[]
+}
+
+/// Consensi granulari e SEPARATI (§7.5): mai un consenso "unico" che copra
+/// trattamento + immagini + newsletter. Per i minori, `firmatoDaGenitoreId`
+/// registra quale esercente la responsabilità genitoriale ha firmato.
+model Consenso {
+  id            String      @id @default(cuid())
+  personaId     String
+  persona       Persona     @relation("ConsensoPersona", fields: [personaId], references: [id])
+  informativaId String
+  informativa   Informativa @relation(fields: [informativaId], references: [id])
+  tipo          String // trattamento_finalita_associative | immagini_video | newsletter_promozionale | comunicazione_terzi
+  stato         String // concesso | negato | revocato
+  data          DateTime
+  modalita      String // cartaceo_firmato_scansionato | form_online
+  ipRichiesta   String? // solo per modalità form_online
+  // canali autorizzati per il consenso immagini (§7.5): sito, facebook, instagram, locandine, stampa — JSON array
+  canaliAutorizzatiImmagini String?
+  firmatoDaGenitoreId       String?
+  firmatoDaGenitore         Persona? @relation("ConsensoFirmaGenitore", fields: [firmatoDaGenitoreId], references: [id])
+  allegatoLiberatoriaId     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([personaId, tipo])
+}
+
+model RegistroTrattamenti {
+  id                   String @id @default(cuid())
+  nomeTrattamento      String
+  finalita             String
+  baseGiuridica        String
+  categorieDati        String
+  categorieInteressati String
+  destinatari          String?
+  tempiConservazione   String
+  misureSicurezza      String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Log di audit APPEND-ONLY: nessuna cancellazione mai.
+model AuditLog {
+  id        String   @id @default(cuid())
+  utenteId  String?
+  utente    Utente?  @relation("AuditLogUtente", fields: [utenteId], references: [id])
+  timestamp DateTime @default(now())
+  entita    String
+  entitaId  String
+  azione    String // create | update | delete | login | export | ...
+  diffJson  String? // JSON con stato prima/dopo
+  ip        String?
+
+  @@index([entita, entitaId])
+  @@index([timestamp])
+}
+
+model RichiestaInteressato {
+  id               String    @id @default(cuid())
+  personaId        String
+  persona          Persona   @relation(fields: [personaId], references: [id])
+  tipo             String // accesso | rettifica | cancellazione
+  dataRichiesta    DateTime
+  esito            String?
+  dataEvasione     DateTime?
+  exportAllegatoId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([personaId])
+}
+
+// ----------------------------------------------------------------------------
+// ALLEGATI: associazione polimorfica non vincolata da FK relazionale (scelta
+// di design confermata) — ogni entità che necessita di un file referenzia
+// qui tramite entitaTipo + entitaId, oltre ai campi *AllegatoId dedicati.
+// ----------------------------------------------------------------------------
+
+model Allegato {
+  id                String    @id @default(cuid())
+  entitaTipo        String // "Persona" | "MovimentoPrimaNota" | "Consenso" | ...
+  entitaId          String
+  nomeFile          String
+  nomeFileOriginale String
+  mimeType          String
+  dimensioneByte    Int
+  percorso          String // path relativo nello storage locale (volume Docker)
+
+  createdAt   DateTime  @default(now())
+  createdById String?
+  createdBy   Utente?   @relation("AllegatoCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  @@index([entitaTipo, entitaId])
+}

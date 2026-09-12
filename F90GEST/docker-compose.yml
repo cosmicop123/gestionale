@@ -1,0 +1,26 @@
+services:
+  gestionale:
+    build: .
+    image: f90gest:latest
+    container_name: f90gest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: "file:/app/prisma/data/gestionale.db"
+      SESSION_SECRET: ${SESSION_SECRET:?Impostare SESSION_SECRET nel file .env}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      STORAGE_DIR: /app/storage
+    volumes:
+      # Unico punto da salvare per un backup completo: database + allegati.
+      - gestionale_db:/app/prisma/data
+      - gestionale_storage:/app/storage
+
+volumes:
+  gestionale_db:
+  gestionale_storage:

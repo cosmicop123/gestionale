@@ -122,6 +122,37 @@ Da **Corsi** puoi:
   assegnato, e può fare l'appello ma non gestire iscrizioni o generare
   attestati (riservato ad amministratore e segreteria).
 
+## Iscrizione pubblica ai corsi e privacy
+
+Da **Amministrazione → Informativa privacy** l'amministratore incolla il
+testo dell'informativa sul trattamento dei dati che l'associazione ha
+predisposto (con il proprio consulente o DPO, se presente): il gestionale
+non scrive né propone alcun testo al posto vostro. **Finché non viene
+pubblicata almeno una volta, la pagina pubblica di iscrizione resta
+disattivata** e mostra un messaggio invece del modulo.
+
+Una volta pubblicata l'informativa, ogni corso con stato "Aperto alle
+iscrizioni" compare automaticamente sulla pagina pubblica
+`/iscrizione`, condivisibile con chiunque (es. sul sito o sui social
+dell'associazione) senza che serva un accesso al gestionale. Da lì una
+persona può:
+
+- Compilare i propri dati e scegliere il corso a cui iscriversi.
+- Se la persona da iscrivere è minorenne, il modulo chiede automaticamente
+  anche i dati di un genitore o tutore (obbligatori).
+- Dare o negare separatamente ciascun consenso: solo quello per il
+  trattamento dei dati necessario a gestire l'iscrizione è obbligatorio;
+  immagini/video, newsletter e comunicazione a terzi restano facoltativi e
+  **nessuna casella è già spuntata di default**.
+
+Ogni iscrizione arrivata da questa pagina compare come **"Preiscritto"**
+nella scheda del corso (tab Iscrizioni): la segreteria verifica i dati e i
+consensi e poi preme **Conferma** — se nel frattempo i posti si sono
+esauriti, la persona passa automaticamente in lista d'attesa invece di
+restare bloccata. Nessuna iscrizione pubblica diventa mai "Confermata" in
+automatico, nemmeno se ci sono posti liberi: la conferma resta sempre una
+decisione della segreteria.
+
 ## Anni sociali
 
 Da **Amministrazione → Anni sociali** puoi creare un nuovo anno sociale
@@ -133,7 +164,6 @@ reversibile da qui — usala solo quando l'anno è davvero terminato.
 
 | Milestone | Cosa diventa utilizzabile |
 |---|---|
-| M5 | Iscrizione online ai corsi, consensi privacy, gestione minori |
 | M6 | Rendiconto per cassa, report contabili |
 | M7 | Eventi, pratiche SIAE, sponsor, raccolte fondi |
 | M8 | Verbali, protocollo, archivio documenti |

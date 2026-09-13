@@ -4,15 +4,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TabEnte } from "./tab-ente";
 import { TabAnniSociali } from "./tab-anni-sociali";
 import { TabUtenti } from "./tab-utenti";
+import { TabInformativa } from "./tab-informativa";
 import type { DatiEnte } from "@/lib/validazioni/ente";
 
 export default async function AmministrazionePage() {
   const utenteCorrente = await richiediRuolo(["amministratore"]);
 
-  const [associazione, anniSociali, utenti] = await Promise.all([
+  const [associazione, anniSociali, utenti, informativaCorrente] = await Promise.all([
     prisma.associazione.findFirst(),
     prisma.annoSociale.findMany({ orderBy: { dataInizio: "desc" } }),
     prisma.utente.findMany({ where: { deletedAt: null }, orderBy: { email: "asc" } }),
+    prisma.informativa.findFirst({ orderBy: { dataPubblicazione: "desc" } }),
   ]);
 
   if (!associazione) {
@@ -59,6 +61,7 @@ export default async function AmministrazionePage() {
           <TabsTrigger value="ente">Dati ente</TabsTrigger>
           <TabsTrigger value="anni-sociali">Anni sociali</TabsTrigger>
           <TabsTrigger value="utenti">Utenti</TabsTrigger>
+          <TabsTrigger value="informativa">Informativa privacy</TabsTrigger>
         </TabsList>
         <TabsContent value="ente" className="max-w-2xl">
           <TabEnte valoriIniziali={valoriIniziali} />
@@ -68,6 +71,9 @@ export default async function AmministrazionePage() {
         </TabsContent>
         <TabsContent value="utenti">
           <TabUtenti utenti={utenti} emailUtenteCorrente={utenteCorrente.email} />
+        </TabsContent>
+        <TabsContent value="informativa">
+          <TabInformativa informativaCorrente={informativaCorrente} />
         </TabsContent>
       </Tabs>
     </div>

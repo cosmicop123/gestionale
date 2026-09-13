@@ -7,6 +7,7 @@ import { registraAudit } from "@/lib/audit";
 import { schemaIscrizioneCorso, type DatiIscrizioneCorso } from "@/lib/validazioni/corso";
 
 export type EsitoAzione = { errore: string } | { successo: true };
+export type EsitoConferma = { errore: string } | { successo: true; messaggio: string };
 
 const RUOLI_GESTIONE_ISCRIZIONI = ["amministratore", "segreteria"];
 
@@ -125,11 +126,13 @@ export async function ritiraIscrizione(iscrizioneId: string): Promise<EsitoAzion
 }
 
 /**
- * Conferma manualmente un'iscrizione in lista d'attesa (es. dopo un aumento
- * della capienza massima). Rifiutata se il posto non è realmente
- * disponibile, per non superare mai la capienza dichiarata.
+ * Conferma manualmente un'iscrizione in lista d'attesa, oppure una
+ * preiscrizione arrivata dalla pagina pubblica di M5 (dopo che la
+ * segreteria ha verificato i dati e i consensi raccolti). Rifiutata se il
+ * posto non è realmente disponibile, per non superare mai la capienza
+ * dichiarata.
  */
-export async function confermaIscrizione(iscrizioneId: string): Promise<EsitoAzione> {
+export async function confermaIscrizione(iscrizioneId: string): Promise<EsitoConferma> {
   const utente = await richiediRuolo(RUOLI_GESTIONE_ISCRIZIONI);
 
   const iscrizione = await prisma.iscrizioneCorso.findUnique({
@@ -137,12 +140,23 @@ export async function confermaIscrizione(iscrizioneId: string): Promise<EsitoAzi
     include: { corso: true },
   });
   if (!iscrizione || iscrizione.deletedAt) return { errore: "Iscrizione non trovata." };
-  if (iscrizione.stato !== "in_lista_attesa") return { errore: "Questa iscrizione non è in lista d'attesa." };
+  if (iscrizione.stato !== "in_lista_attesa" && iscrizione.stato !== "preiscritto") {
+    return { errore: "Questa iscrizione non è in attesa di conferma." };
+  }
 
   const postiOccupati = await contaPostiOccupati(iscrizione.corsoId);
   const capienza = iscrizione.corso.capienzaMassima;
-  if (capienza !== null && postiOccupati >= capienza) {
-    return { errore: "Nessun posto disponibile: la capienza massima è già raggiunta." };
+  const postoDisponibile = capienza === null || postiOccupati < capienza;
+
+  if (!postoDisponibile) {
+    if (iscrizione.stato === "in_lista_attesa") {
+      return { errore: "Nessun posto disponibile: la capienza massima è già raggiunta." };
+    }
+    // Una preiscrizione pubblica (M5) arrivata a capienza esaurita va in
+    // lista d'attesa invece di restare bloccata senza alcuna azione utile.
+    await prisma.iscrizioneCorso.update({ where: { id: iscrizioneId }, data: { stato: "in_lista_attesa" } });
+    revalidatePath(`/corsi/${iscrizione.corsoId}`);
+    return { successo: true, messaggio: "Nessun posto libero: l'iscrizione è stata messa in lista d'attesa." };
   }
 
   await prisma.iscrizioneCorso.update({ where: { id: iscrizioneId }, data: { stato: "confermato" } });
@@ -155,5 +169,5 @@ export async function confermaIscrizione(iscrizioneId: string): Promise<EsitoAzi
   });
 
   revalidatePath(`/corsi/${iscrizione.corsoId}`);
-  return { successo: true };
+  return { successo: true, messaggio: "Iscrizione confermata." };
 }

@@ -195,7 +195,7 @@ export function TabIscrizioni({
       toast.error(esito.errore);
       return;
     }
-    toast.success("Iscrizione confermata.");
+    toast.success(esito.messaggio);
     router.refresh();
   }
 
@@ -246,7 +246,7 @@ export function TabIscrizioni({
                 {puoGestire && (
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      {iscrizione.stato === "in_lista_attesa" && (
+                      {(iscrizione.stato === "in_lista_attesa" || iscrizione.stato === "preiscritto") && (
                         <Button variant="outline" size="sm" onClick={() => onConferma(iscrizione.id)}>
                           Conferma
                         </Button>

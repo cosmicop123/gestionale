@@ -12,25 +12,102 @@ muove nel codice, non ripete il **cosa**.
 
 ## Stato del progetto
 
-- **M0, M1, M2, M3 e M4 completate.** M0: setup. M1: auth, ruoli, anagrafica
-  ente, anni sociali, utenti. M2: anagrafica persone con validazione CF
-  completa, flusso domanda di ammissione → delibera → libro soci, import
-  Excel/CSV, scheda socio, tessere. M3: conti, tipi di quota, quote,
-  pagamenti con generazione automatica di movimento e ricevuta, prima
-  nota con storni, riporto automatico del saldo alla chiusura dell'anno
-  sociale. M4: corsi con calendario lezioni generato automaticamente,
-  iscrizioni interne con gestione della lista d'attesa, appello mobile
-  (manuale o via scansione QR) con salvataggio immediato, registro
-  presenze in PDF, calcolo automatico di ore frequentate e percentuale di
-  presenza, generazione massiva degli attestati solo per chi supera la
-  soglia, scheda docente con accesso limitato ai propri corsi. **Da qui il
-  sistema è utilizzabile in produzione anche per corsi e attestati**, come
-  richiesto dal piano a milestone (§10).
-- Prossima milestone: **M5 — Pagina pubblica di iscrizione**: consensi
-  GDPR, gestione minori.
+- **M0, M1, M2, M3, M4 e M5 completate.** M0: setup. M1: auth, ruoli,
+  anagrafica ente, anni sociali, utenti. M2: anagrafica persone con
+  validazione CF completa, flusso domanda di ammissione → delibera → libro
+  soci, import Excel/CSV, scheda socio, tessere. M3: conti, tipi di quota,
+  quote, pagamenti con generazione automatica di movimento e ricevuta,
+  prima nota con storni, riporto automatico del saldo alla chiusura
+  dell'anno sociale. M4: corsi con calendario lezioni generato
+  automaticamente, iscrizioni interne con gestione della lista d'attesa,
+  appello mobile (manuale o via scansione QR) con salvataggio immediato,
+  registro presenze in PDF, calcolo automatico di ore frequentate e
+  percentuale di presenza, generazione massiva degli attestati solo per
+  chi supera la soglia, scheda docente con accesso limitato ai propri
+  corsi. M5: pagina pubblica di iscrizione ai corsi (nessuna
+  autenticazione), gestione dell'informativa privacy da Amministrazione,
+  consensi GDPR granulari e separati (mai preselezionati) raccolti al
+  momento dell'iscrizione, gestione dei minori con dati del genitore/tutore
+  obbligatori, revisione interna delle preiscrizioni pubbliche prima della
+  conferma. **Da qui il sistema è utilizzabile in produzione anche per la
+  raccolta di iscrizioni online**, come richiesto dal piano a milestone
+  (§10).
+- Prossima milestone: **M6 — Rendiconto per cassa**, report contabili
+  (Mod. D, natura fiscale).
 - Le milestone si susseguono una alla volta con conferma dell'utente a fine
   di ognuna (si veda il piano di lavoro nella specifica, §10). Non scrivere
   codice per più di una milestone alla volta.
+
+### Note di continuità per M5 (da tenere presenti in M6+)
+
+- **Nessuna migrazione Prisma necessaria**: i modelli `Informativa`,
+  `Consenso`, `RelazioneFamiliare` erano già completi nello schema di M0.
+- **La pagina pubblica (`/iscrizione`, `/iscrizione/[corsoId]`) vive fuori
+  dal route group `(app)`** (stesso livello di `/login`, `/onboarding`),
+  senza sidebar né sessione richiesta: aggiunta esplicitamente a
+  `ROTTE_PUBBLICHE` in `src/proxy.ts`. Entrambe le pagine impostano
+  `export const dynamic = "force-dynamic"` — senza di questo Next tenta di
+  pre-renderle in fase di build (nessun cookie/header letto per innescare
+  automaticamente il rendering dinamico) e la build fallisce contro un
+  database che a quel punto non esiste ancora.
+- **L'informativa privacy non è mai generata dal software**: il testo lo
+  scrive/incolla l'associazione da Amministrazione → Informativa privacy
+  (`src/lib/informativa/actions.ts`, `pubblicaInformativa`, solo
+  amministratore). Ogni pubblicazione crea una nuova riga `Informativa`
+  (mai un update: i consensi già raccolti restano legati per sempre alla
+  versione mostrata al momento, `Consenso.informativaId`); `versione` è
+  semplicemente il timestamp ISO di pubblicazione. Finché non esiste
+  nessuna `Informativa`, la pagina pubblica mostra un messaggio e non offre
+  il modulo (mai un'iscrizione senza informativa mostrata, §7.5).
+- **Consensi granulari e mai preselezionati** (§7.5): il form pubblico
+  (`src/components/iscrizione-pubblica/modulo-iscrizione.tsx`) parte con
+  tutti i checkbox dei consensi a `false`. Solo `trattamento_finalita_associative`
+  è obbligatorio per inviare la richiesta (serve all'associazione per
+  poter gestire l'iscrizione); gli altri tre tipi (`immagini_video`,
+  `newsletter_promozionale`, `comunicazione_terzi`) sono facoltativi. Viene
+  comunque creata una riga `Consenso` per ciascuno dei 4 tipi, anche
+  quando negato (`stato: "negato"`), per avere una traccia completa di
+  cosa è stato chiesto e di come la persona ha risposto — non solo dei
+  consensi accordati.
+- **Preiscrizioni pubbliche sempre in stato "preiscritto", mai confermate
+  automaticamente**: a differenza del flusso interno di M4
+  (`iscriviPersona`, che salta "preiscritto" e va dritto a
+  "confermato"/"in_lista_attesa"), ogni iscrizione arrivata dal form
+  pubblico (`src/lib/iscrizione-pubblica/actions.ts`,
+  `inviaPreiscrizionePubblica`) resta "preiscritto" anche se ci sono posti
+  liberi: la segreteria deve poter verificare dati e consensi prima di
+  confermarla. `confermaIscrizione` (`src/lib/iscrizione-corso/actions.ts`)
+  è stata estesa per accettare anche questo stato in ingresso, e se nel
+  frattempo la capienza si è esaurita sposta la persona in lista d'attesa
+  invece di limitarsi a un errore senza via d'uscita.
+- **Nessuna sovrascrittura di anagrafica esistente da un form non
+  autenticato**: se il codice fiscale inviato corrisponde a una `Persona`
+  già censita, `inviaPreiscrizionePubblica` riusa quell'id ma aggiorna
+  *solo* i campi contatto attualmente vuoti (mai un dato già presente) —
+  altrimenti chiunque conoscesse il codice fiscale di un socio potrebbe
+  alterarne l'anagrafica tramite un modulo pubblico. Stesso principio per
+  `RelazioneFamiliare`: se ne esiste già una per il minore, non viene
+  toccata.
+- **Rate limiting sul form pubblico**: riusa
+  `verificaELimitaTentativi`/`src/lib/auth/rate-limit.ts` (già usato per il
+  login) con chiave `iscrizione-pubblica:<ip>`, per limitare lo spam senza
+  introdurre una nuova dipendenza o infrastruttura (§4, niente Redis).
+- **Gestione minori sul form pubblico riusa la logica già scritta in M2**:
+  `isMinorenne` (`src/lib/persona/eta.ts`) decide quando mostrare la
+  sezione del genitore, e `schemaGenitore` (ora esportato da
+  `src/lib/validazioni/persona.ts`, prima privato) è condiviso tra il form
+  interno di creazione persona e il nuovo `schemaIscrizionePubblica`
+  (`src/lib/validazioni/consenso.ts`) per non duplicare le regole. Il
+  genitore/tutore inserito da un form pubblico non diventa mai una
+  `Persona` censita a sé (evita di popolare l'anagrafica di terzi non
+  verificati): resta nei campi liberi di `RelazioneFamiliare`
+  (`genitoreNomeCognome`/`genitoreCodiceFiscale`/...), esattamente come già
+  previsto dallo schema per il caso "genitore non ancora censito".
+- **Rimandato a M9** (modulo "Privacy" completo, coerente con
+  `moduli-navigazione.ts`): amministrazione del `RegistroTrattamenti`,
+  gestione di `RichiestaInteressato` (accesso/rettifica/cancellazione),
+  revoca dei consensi già dati, esportazione dei dati di una persona. M5
+  copre solo la raccolta dei consensi al momento dell'iscrizione pubblica.
 
 ### Note di continuità per M4 (da tenere presenti in M5+)
 
@@ -141,11 +218,13 @@ muove nel codice, non ripete il **cosa**.
 - **Test e2e multipli condividono un solo database** (`e2e-test.db`,
   ricreato una volta sola all'inizio della run da `global-setup.ts`, non
   per singolo file): i file di test sono numerati (`01-login`, `02-soci`,
-  `03-contabilita`, `04-corsi`) apposta, perché Playwright con `workers: 1`
-  li esegue in ordine alfabetico e alcuni assumono lo stato lasciato dai
-  precedenti (es. `02-soci` richiede che l'onboarding sia già stato
-  completato da `01-login`, e `04-corsi` riusa la persona "Giulia Verdi"
-  creata e ammessa a socia in `03-contabilita` per testare un'iscrizione).
+  `03-contabilita`, `04-corsi`, `05-iscrizione-pubblica`) apposta, perché
+  Playwright con `workers: 1` li esegue in ordine alfabetico e alcuni
+  assumono lo stato lasciato dai precedenti (es. `02-soci` richiede che
+  l'onboarding sia già stato completato da `01-login`, `04-corsi` riusa la
+  persona "Giulia Verdi" creata e ammessa a socia in `03-contabilita`, e
+  `05-iscrizione-pubblica` pubblica la propria informativa privacy e crea
+  il proprio corso perché nessun test precedente lo fa).
   Se si aggiungono nuovi file di test E2E che dipendono da uno stato
   pregresso, dar loro un prefisso numerico coerente con l'ordine di
   dipendenza invece di dare per scontato l'ordine alfabetico naturale dei

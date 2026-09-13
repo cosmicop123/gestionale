@@ -15,7 +15,11 @@ import { NOME_COOKIE_SESSIONE } from "@/lib/auth/cookie-nome";
 // farlo qui, sulla sola presenza del cookie, creerebbe un loop di redirect
 // tra /login e /dashboard quando il cookie è scaduto lato server ma non
 // ancora cancellato lato client.
-const ROTTE_PUBBLICHE = ["/login"];
+// "/iscrizione" (§6 M5) è la pagina pubblica di iscrizione ai corsi: nessun
+// accesso richiesto, dati sensibili raccolti lì (consensi, dati di minori)
+// gestiti interamente da server action con propria validazione e rate
+// limiting, mai dal solo routing (§8).
+const ROTTE_PUBBLICHE = ["/login", "/iscrizione"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

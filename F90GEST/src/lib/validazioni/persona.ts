@@ -2,7 +2,7 @@ import { z } from "zod";
 import { validaCodiceFiscale } from "@/lib/persona/codice-fiscale";
 import { isMinorenne } from "@/lib/persona/eta";
 
-const schemaGenitore = z.object({
+export const schemaGenitore = z.object({
   genitoreNomeCognome: z.string().min(1, "Inserire nome e cognome dell'esercente la responsabilità genitoriale."),
   genitoreCodiceFiscale: z.string().optional().or(z.literal("")),
   genitoreEmail: z.string().email("Email non valida.").optional().or(z.literal("")),

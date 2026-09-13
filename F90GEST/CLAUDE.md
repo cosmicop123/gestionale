@@ -12,7 +12,7 @@ muove nel codice, non ripete il **cosa**.
 
 ## Stato del progetto
 
-- **M0, M1, M2, M3, M4, M5, M6 e M7 completate.** M0: setup. M1: auth, ruoli,
+- **M0, M1, M2, M3, M4, M5, M6, M7 e M8 completate.** M0: setup. M1: auth, ruoli,
   anagrafica ente, anni sociali, utenti. M2: anagrafica persone con
   validazione CF completa, flusso domanda di ammissione → delibera → libro
   soci, import Excel/CSV, scheda socio, tessere. M3: conti, tipi di quota,
@@ -39,13 +39,73 @@ muove nel codice, non ripete il **cosa**.
   incasso dell'evento in prima nota, turni volontari, pratiche SIAE con
   programma musicale su archivio brani riutilizzabile, sponsor/contributi
   con incasso che genera movimento automatico, raccolte fondi occasionali
-  (collegate o meno a un evento) con i propri movimenti.
+  (collegate o meno a un evento) con i propri movimenti. M8: libri sociali
+  con riunioni di assemblea/consiglio direttivo numerate progressivamente
+  per tipo, convocati con gestione delle deleghe, presenze, quorum
+  costitutivo/deliberativo, delibere con esito e conteggio voti, verbale
+  testuale con generazione PDF su richiesta (non persistito), registro di
+  protocollo in entrata/uscita numerato per anno e tipo, archivio documenti
+  dell'associazione con categorie, scadenze e versionamento (nuove versioni
+  non cancellano le precedenti).
 - **Da qui in avanti l'utente ha chiesto di procedere in automatico su
   tutte le milestone rimanenti (M8-M10), senza fermarsi per conferma dopo
   ognuna** — istruzione esplicita che sostituisce, per il resto del
   progetto, il fermo-dopo-milestone previsto da §10.
-- Prossima milestone: **M8 — Libri sociali**, verbali, protocollo,
-  documenti.
+- Prossima milestone: **M9 — Comunicazioni** (email via nodemailer,
+  segmentazione destinatari, template con variabili) e **modulo Privacy**
+  completo (registro dei trattamenti, richieste dell'interessato — accesso,
+  rettifica, cancellazione —, revoca consensi), esplicitamente rimandato da
+  M5 a M9.
+
+### Note di continuità per M8 (da tenere presenti in M9+)
+
+- **Nessuna migrazione Prisma necessaria**: `Riunione`, `RiunionePartecipante`,
+  `Delibera`, `Protocollo`, `Documento` erano già completi nello schema di
+  M0.
+- **Numerazione progressiva per tipo, non globale**: le riunioni usano
+  `prossimoNumero(tx, \`riunione_${dati.tipo}\`)` (senza `annoRiferimento`:
+  numerazione unica e continua nel tempo per tipo, come richiesto per un
+  libro verbali) mentre il protocollo usa
+  `prossimoNumero(tx, \`protocollo_${dati.tipo}\`, annoRiferimento)` (annuale,
+  come un registro di protocollo tradizionale). Stessa funzione centralizzata
+  di numerazione (`src/lib/numeratore.ts`) usata da libro soci/ricevute/
+  attestati, solo con chiavi diverse — nessuna nuova infrastruttura.
+- **Verbale PDF generato on-demand, non persistito**: a differenza delle
+  ricevute/attestati (generati una volta e salvati come `Allegato`), il PDF
+  del verbale (`src/app/(app)/libri-sociali/riunioni/[riunioneId]/verbale/pdf/route.ts`)
+  viene renderizzato al momento del download da `VerbaleDocument`
+  (`src/lib/riunione/verbale-pdf.tsx`), perché il testo del verbale può
+  essere corretto/integrato dopo la riunione (a differenza di un importo o
+  di un nome, il cui valore è definitivo al momento dell'emissione).
+- **Riuso della rotta generica di download allegati**: i link di apertura
+  di `Documento` e `Protocollo` puntano a `/contabilita/allegati/[allegatoId]`,
+  la stessa rotta creata in M3 per gli allegati di prima nota — confermata
+  pienamente generica (non specifica alla contabilità) prima di riusarla,
+  invece di duplicarne una nuova per il modulo documenti.
+- **Versionamento documenti additivo**: `caricaNuovaVersioneDocumento`
+  incrementa `Documento.versione` e salva il nuovo `Allegato`, ma non
+  cancella l'allegato della versione precedente (resta su disco,
+  raggiungibile solo indirettamente) — coerente con la logica "mai perdere
+  uno storico" già vista per l'append-only, anche se `Documento` non è
+  formalmente nell'elenco append-only di §7.1 (usa `deletedAt` per la
+  cancellazione logica, non `delete` reale).
+- **Pattern e2e per Checkbox controllati dal server**: `.check()` di
+  Playwright si aspetta un toggle sincrono del checkbox nativo; i checkbox
+  di questa app sono controllati da `checked={prop}` e cambiano stato solo
+  dopo che `router.refresh()` risolve, quindi `.check()` va sempre sostituito
+  con `.click()` seguito da un separato `await expect(locator).toBeChecked()`
+  (che effettua polling) — capitato nei test di presenza/quorum di
+  `e2e/09-libri-sociali-documenti.spec.ts`, stesso principio del bug dei
+  `defaultValues` di M7 ma per lo stato controllato invece che per il valore
+  iniziale.
+- **Ambiguità badge "Approvata" durante l'animazione di uscita di un
+  Dialog**: un `<Dialog>` Radix può restare brevemente montato durante
+  l'animazione di chiusura dopo `setAperto(false)`, per cui un testo
+  presente sia nel dialog (in fase di chiusura) sia nella tabella
+  sottostante genera una violazione di strict mode in `getByText` —
+  risolto con `.first()` quando l'elemento corretto è garantito essere il
+  primo nel DOM, stesso principio già visto per il mirror `<select>`
+  nascosto dei componenti `Select`.
 
 ### Note di continuità per M7 (da tenere presenti in M8+)
 
@@ -360,10 +420,11 @@ Su richiesta esplicita dell'utente (non parte del piano a milestone), durante M7
   ricreato una volta sola all'inizio della run da `global-setup.ts`, non
   per singolo file): i file di test sono numerati (`01-login`, `02-soci`,
   `03-contabilita`, `04-corsi`, `05-iscrizione-pubblica`, `06-rendiconto`,
-  `07-quota-corso`, `08-eventi`) apposta, perché Playwright con
-  `workers: 1` li esegue in ordine alfabetico e alcuni assumono lo stato
-  lasciato dai precedenti (es. `02-soci` richiede che l'onboarding sia già
-  stato completato da `01-login`, `04-corsi`/`07-quota-corso`/`08-eventi`
+  `07-quota-corso`, `08-eventi`, `09-libri-sociali-documenti`) apposta,
+  perché Playwright con `workers: 1` li esegue in ordine alfabetico e
+  alcuni assumono lo stato lasciato dai precedenti (es. `02-soci` richiede
+  che l'onboarding sia già stato completato da `01-login`,
+  `04-corsi`/`07-quota-corso`/`08-eventi`/`09-libri-sociali-documenti`
   riusano la persona "Giulia Verdi" e il conto "Cassa contanti" creati in
   `03-contabilita`, `05-iscrizione-pubblica` pubblica la propria
   informativa privacy e crea il proprio corso, e `06-rendiconto` verifica

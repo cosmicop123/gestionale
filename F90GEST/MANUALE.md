@@ -216,6 +216,40 @@ non formative:
   registrandone entrate e uscite e vedendo il saldo raccolto in tempo
   reale.
 
+## Libri sociali
+
+Da **Libri sociali** puoi tenere il registro delle riunioni di assemblea e
+di consiglio direttivo:
+
+- **Crea una riunione** indicando il tipo (assemblea o consiglio
+  direttivo), data, ora, sede e ordine del giorno: riceve un numero
+  progressivo proprio per tipo (le assemblee e i consigli direttivi hanno
+  numerazioni separate, come nel libro verbali cartaceo).
+- **Convocati e presenze**: aggiungi le persone convocate (eventualmente
+  con delega da un'altra persona) e segna chi è effettivamente presente il
+  giorno della riunione.
+- **Quorum**: spunta se il quorum costitutivo e/o deliberativo risultano
+  verificati.
+- **Delibere**: registra ogni delibera con oggetto, esito (approvata,
+  respinta, rinviata) ed eventuale conteggio dei voti.
+- **Verbale**: scrivi il testo del verbale e salvalo; il **PDF del
+  verbale** si genera al volo ogni volta che lo scarichi, quindi puoi
+  correggere o integrare il testo anche dopo la riunione e il PDF
+  rifletterà sempre l'ultima versione salvata.
+
+## Documenti e protocollo
+
+Da **Documenti e protocollo**:
+
+- **Documenti**: carica statuto, bilanci, contratti, polizze assicurative
+  e altri documenti dell'associazione, con categoria ed eventuale scadenza
+  (le scadenze superate sono evidenziate). Caricare una **nuova versione**
+  di un documento non cancella quella precedente.
+- **Protocollo**: registra la corrispondenza in entrata e in uscita
+  (mittente/destinatario, oggetto, mezzo di trasmissione) con un allegato
+  facoltativo; ogni protocollo riceve un numero progressivo annuale per
+  tipo (entrata/uscita), come un registro di protocollo tradizionale.
+
 ## Anni sociali
 
 Da **Amministrazione → Anni sociali** puoi creare un nuovo anno sociale
@@ -227,6 +261,5 @@ reversibile da qui — usala solo quando l'anno è davvero terminato.
 
 | Milestone | Cosa diventa utilizzabile |
 |---|---|
-| M8 | Verbali, protocollo, archivio documenti |
-| M9 | Invio email e comunicazioni |
+| M9 | Invio email e comunicazioni, modulo Privacy completo |
 | M10 | Backup/ripristino da interfaccia, log di controllo |

@@ -12,7 +12,7 @@ muove nel codice, non ripete il **cosa**.
 
 ## Stato del progetto
 
-- **M0, M1, M2, M3, M4, M5 e M6 completate.** M0: setup. M1: auth, ruoli,
+- **M0, M1, M2, M3, M4, M5, M6 e M7 completate.** M0: setup. M1: auth, ruoli,
   anagrafica ente, anni sociali, utenti. M2: anagrafica persone con
   validazione CF completa, flusso domanda di ammissione → delibera → libro
   soci, import Excel/CSV, scheda socio, tessere. M3: conti, tipi di quota,
@@ -34,13 +34,85 @@ muove nel codice, non ripete il **cosa**.
   (§10). M6: rendiconto per cassa (Mod. D / Mod. E forma aggregata)
   generato dai movimenti di prima nota per anno sociale, con mappatura
   categoria→sezione parametrica ed editabile, PDF scaricabile, report
-  sulle entrate potenzialmente commerciali (§7.3).
+  sulle entrate potenzialmente commerciali (§7.3). M7: eventi con
+  partecipazioni (censite o a nome libero), check-in manuale o via QR,
+  incasso dell'evento in prima nota, turni volontari, pratiche SIAE con
+  programma musicale su archivio brani riutilizzabile, sponsor/contributi
+  con incasso che genera movimento automatico, raccolte fondi occasionali
+  (collegate o meno a un evento) con i propri movimenti.
 - **Da qui in avanti l'utente ha chiesto di procedere in automatico su
-  tutte le milestone rimanenti (M7-M10), senza fermarsi per conferma dopo
+  tutte le milestone rimanenti (M8-M10), senza fermarsi per conferma dopo
   ognuna** — istruzione esplicita che sostituisce, per il resto del
   progetto, il fermo-dopo-milestone previsto da §10.
-- Prossima milestone: **M7 — Eventi**, pratiche SIAE, sponsor, raccolte
-  fondi.
+- Prossima milestone: **M8 — Libri sociali**, verbali, protocollo,
+  documenti.
+
+### Note di continuità per M7 (da tenere presenti in M8+)
+
+- **Nessuna migrazione Prisma necessaria**: `Evento`, `PraticaSIAE`,
+  `BranoMusicale`, `ProgrammaMusicalePratica`, `PartecipazioneEvento`,
+  `TurnoVolontario`, `SponsorContributo`, `RaccoltaFondi` erano già
+  completi nello schema di M0.
+- **Incasso evento cumulativo, non per singola partecipazione**: si è
+  scelto di NON generare un movimento di prima nota per ogni
+  `PartecipazioneEvento` (a differenza delle quote corso di M7-bis, dove
+  ogni iscrizione ha la propria quota): l'incasso reale di un evento
+  (biglietti/oblazioni raccolti alla porta) è quasi sempre un unico
+  versamento in cassa che può differire dalla somma nominale dichiarata
+  per singolo partecipante. `registraIncassoEvento` (`src/lib/evento/actions.ts`)
+  registra quindi un solo movimento cumulativo collegato via `eventoId`,
+  con importo suggerito ma modificabile dal tesoriere.
+- **`PartecipazioneEvento`/`TurnoVolontario` non sono append-only**: a
+  differenza di `Socio`/`MovimentoPrimaNota`/`Ricevuta`, questi due modelli
+  non sono nell'elenco append-only della specifica (§7.1), quindi
+  `rimuoviPartecipazione`/`rimuoviTurnoVolontario` fanno una `delete` reale
+  (nessun campo `deletedAt` in questi due modelli) — corretto per come
+  sono definiti, non un errore da correggere.
+- **Sponsor/contributi generalizzati**: `SponsorContributo` può essere
+  collegato a un evento, a una raccolta fondi, o a nessuno dei due (sponsor
+  "generico", es. sponsorizzazione annuale): `creaSponsorContributo` accetta
+  entrambi gli id come opzionali. `TabSponsorGlobale`
+  (`/eventi/sponsor`, elenco di tutti gli sponsor) e `TabSponsorEvento`
+  (dentro la scheda di un evento) condividono gli stessi dialog
+  (`src/components/evento/sponsor-dialogs.tsx`, `DialogNuovoSponsor` e
+  `DialogIncassaSponsor`) invece di duplicare il form.
+- **Programma musicale SIAE riusa un archivio di brani** (`BranoMusicale`,
+  già pensato come tabella riutilizzabile tra pratiche diverse): aggiungere
+  un brano al programma di una pratica permette di scegliere un brano già
+  censito oppure crearne uno nuovo al volo, senza dover prima passare da
+  una gestione separata dell'archivio.
+- **QR check-in eventi riusa lo scanner dei corsi**: il componente
+  `ScannerQr` (wrapper di `BarcodeDetector`, con fallback manuale se non
+  supportato) è stato estratto da `src/components/corso/appello-client.tsx`
+  a `src/components/shared/qr-scanner.tsx` e riusato tale e quale in
+  `src/components/evento/check-in-client.tsx` — stesso principio del check-in
+  degli eventi e dell'appello dei corsi (un QR per iscrizione/partecipazione,
+  mai un self-check-in pubblico non autenticato, §6).
+- **Bug reale trovato e corretto durante i test e2e di M7**: `DialogIncasso`
+  (`src/components/evento/tab-partecipazioni.tsx`) precompilava l'importo
+  suggerito con `useForm({ defaultValues: {...} })`, ma react-hook-form
+  applica `defaultValues` una sola volta al primo mount — se il componente
+  resta montato (aggiunta di un partecipante seguita, nella stessa sessione,
+  dall'apertura del dialog di incasso), il valore suggerito restava quello
+  calcolato al mount iniziale, tipicamente zero. Corretto con un
+  `useEffect` che fa `reset(...)` quando il dialog si apre (`aperto` passa
+  a `true`), ricalcolando il default sui props correnti. **Nota per il
+  futuro**: qualunque dialog che precompila un campo da un valore derivato
+  da props che possono cambiare mentre il componente resta montato
+  necessita dello stesso pattern (o della prop `values` di react-hook-form
+  7.44+, non usata qui per non ri-sincronizzare continuamente un campo che
+  l'utente può voler modificare a mano). In questa stessa occasione si è
+  notato che diversi dialog del modulo Eventi non mostravano i messaggi di
+  errore di validazione (`errors.campo`) sotto i campi obbligatori — corretto
+  ovunque mancasse, perché un fallimento di validazione silenzioso (nessun
+  submit, nessun feedback) è indistinguibile da un bug per chi usa l'app.
+- **Convenzione e2e confermata anche qui**: `getByText` su un valore che
+  compare anche come opzione di un `<Select>` (Radix mantiene un
+  `<select>` nativo nascosto per l'accessibilità/autofill, con le stesse
+  opzioni) va quasi sempre scoped a `getByRole("cell"|"row", ...)` per
+  evitare violazioni di strict mode — capitato più volte nei test di M7
+  (`e2e/08-eventi.spec.ts`), stesso principio già annotato per i `combobox`
+  multipli in pagina nelle note di M4.
 
 ### Nota fuori milestone: giustificativi via foto e ricevute per corsi/servizi
 
@@ -287,12 +359,13 @@ Su richiesta esplicita dell'utente (non parte del piano a milestone), durante M7
 - **Test e2e multipli condividono un solo database** (`e2e-test.db`,
   ricreato una volta sola all'inizio della run da `global-setup.ts`, non
   per singolo file): i file di test sono numerati (`01-login`, `02-soci`,
-  `03-contabilita`, `04-corsi`, `05-iscrizione-pubblica`, `06-rendiconto`)
-  apposta, perché Playwright con `workers: 1` li esegue in ordine
-  alfabetico e alcuni assumono lo stato lasciato dai precedenti (es.
-  `02-soci` richiede che l'onboarding sia già stato completato da
-  `01-login`, `04-corsi` riusa la persona "Giulia Verdi" creata e ammessa a
-  socia in `03-contabilita`, `05-iscrizione-pubblica` pubblica la propria
+  `03-contabilita`, `04-corsi`, `05-iscrizione-pubblica`, `06-rendiconto`,
+  `07-quota-corso`, `08-eventi`) apposta, perché Playwright con
+  `workers: 1` li esegue in ordine alfabetico e alcuni assumono lo stato
+  lasciato dai precedenti (es. `02-soci` richiede che l'onboarding sia già
+  stato completato da `01-login`, `04-corsi`/`07-quota-corso`/`08-eventi`
+  riusano la persona "Giulia Verdi" e il conto "Cassa contanti" creati in
+  `03-contabilita`, `05-iscrizione-pubblica` pubblica la propria
   informativa privacy e crea il proprio corso, e `06-rendiconto` verifica
   che il saldo di cassa e il movimento categorizzato "quote_associative"
   di `03-contabilita` compaiano correttamente nel rendiconto).

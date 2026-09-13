@@ -185,6 +185,37 @@ di esercizio, saldo di cassa e banca a inizio e fine periodo.
   già segnalati come tali al momento della registrazione: è solo
   un'informazione di sintesi, non una qualificazione fiscale automatica.
 
+## Eventi
+
+Da **Eventi** puoi gestire spettacoli, feste, conferenze e altre attività
+non formative:
+
+- **Crea un evento** indicando tipologia, date, luogo e tipo di ingresso
+  (gratuito, oblazione volontaria o a pagamento).
+- **Aggiungi i partecipanti**, censiti o anche solo con un nome (per chi
+  non è socio né altrimenti in anagrafica), e registra il **check-in**
+  all'ingresso — manualmente o inquadrando con la fotocamera il codice QR
+  personale di ciascun partecipante (pagina **Check-in**, dalla scheda
+  dell'evento).
+- Se l'evento prevede un incasso, **"Registra incasso"** crea il movimento
+  di prima nota corrispondente in un colpo solo (un unico versamento
+  cumulativo, come tipicamente avviene per un incasso raccolto alla porta,
+  non un movimento per ogni singolo biglietto).
+- **Turni volontari**: proponi un turno a un volontario per una mansione e
+  un orario, poi confermalo o segnalalo come rifiutato.
+- **Pratica SIAE**: predisponi la pratica per l'evento (tipo di permesso,
+  stato, importi, protocollo), carica il bordero degli incassi quando
+  disponibile, e componi il **programma musicale** scegliendo i brani da
+  un archivio riutilizzabile (o aggiungendone di nuovi).
+- **Sponsor e contributi**: registra una sponsorizzazione, un'erogazione
+  liberale o un contributo pubblico legato all'evento (o a una raccolta
+  fondi, o a nessuno dei due); quando viene accettato e poi incassato, il
+  gestionale genera da solo il movimento di prima nota.
+- **Raccolte fondi**: da **Eventi → Raccolte fondi** puoi tenere traccia di
+  una raccolta fondi occasionale (collegata o meno a un evento specifico),
+  registrandone entrate e uscite e vedendo il saldo raccolto in tempo
+  reale.
+
 ## Anni sociali
 
 Da **Amministrazione → Anni sociali** puoi creare un nuovo anno sociale
@@ -196,7 +227,6 @@ reversibile da qui — usala solo quando l'anno è davvero terminato.
 
 | Milestone | Cosa diventa utilizzabile |
 |---|---|
-| M7 | Eventi, pratiche SIAE, sponsor, raccolte fondi |
 | M8 | Verbali, protocollo, archivio documenti |
 | M9 | Invio email e comunicazioni |
 | M10 | Backup/ripristino da interfaccia, log di controllo |

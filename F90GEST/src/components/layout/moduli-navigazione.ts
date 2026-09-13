@@ -32,7 +32,7 @@ export const vociNavigazione: VoceNavigazione[] = [
   { titolo: "Soci e tesseramenti", href: "/soci", icona: Users, disponibileDaMilestone: "M2", attivo: true, soloRuoli: ["amministratore", "segreteria", "tesoriere", "sola_lettura"] },
   { titolo: "Contabilità", href: "/contabilita", icona: Wallet, disponibileDaMilestone: "M3", attivo: true, soloRuoli: ["amministratore", "tesoriere", "segreteria", "sola_lettura"] },
   { titolo: "Corsi", href: "/corsi", icona: GraduationCap, disponibileDaMilestone: "M4", attivo: true, soloRuoli: ["amministratore", "segreteria", "docente", "sola_lettura"] },
-  { titolo: "Eventi", href: "/eventi", icona: PartyPopper, disponibileDaMilestone: "M7", attivo: false },
+  { titolo: "Eventi", href: "/eventi", icona: PartyPopper, disponibileDaMilestone: "M7", attivo: true, soloRuoli: ["amministratore", "segreteria", "tesoriere", "sola_lettura"] },
   { titolo: "Libri sociali", href: "/libri-sociali", icona: BookMarked, disponibileDaMilestone: "M6", attivo: false },
   { titolo: "Documenti e protocollo", href: "/documenti", icona: FolderArchive, disponibileDaMilestone: "M8", attivo: false },
   { titolo: "Comunicazioni", href: "/comunicazioni", icona: Mail, disponibileDaMilestone: "M9", attivo: false },

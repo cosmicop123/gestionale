@@ -29,7 +29,7 @@ export type VoceNavigazione = {
 // generare link rotti verso pagine non ancora esistenti.
 export const vociNavigazione: VoceNavigazione[] = [
   { titolo: "Dashboard", href: "/dashboard", icona: LayoutDashboard, disponibileDaMilestone: "M1", attivo: true },
-  { titolo: "Soci e tesseramenti", href: "/soci", icona: Users, disponibileDaMilestone: "M2", attivo: false },
+  { titolo: "Soci e tesseramenti", href: "/soci", icona: Users, disponibileDaMilestone: "M2", attivo: true, soloRuoli: ["amministratore", "segreteria", "tesoriere", "sola_lettura"] },
   { titolo: "Contabilità", href: "/contabilita", icona: Wallet, disponibileDaMilestone: "M3", attivo: false },
   { titolo: "Corsi", href: "/corsi", icona: GraduationCap, disponibileDaMilestone: "M4", attivo: false },
   { titolo: "Eventi", href: "/eventi", icona: PartyPopper, disponibileDaMilestone: "M7", attivo: false },

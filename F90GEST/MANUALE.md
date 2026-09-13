@@ -32,6 +32,32 @@ disponibili.
 | Amministratore | Tutto: dati ente, anni sociali, utenti. I moduli soci/contabilità/corsi arriveranno con le prossime milestone. |
 | Segreteria, Tesoriere, Docente, Sola lettura | Possono accedere ma non vedono ancora la sezione Amministrazione: i moduli di loro competenza non sono ancora stati costruiti. |
 
+## Soci
+
+Da **Soci e tesseramenti** puoi:
+
+- **Creare una nuova persona**: nome, cognome, codice fiscale (verificato
+  automaticamente), data di nascita, contatti. Se la persona è minorenne,
+  il modulo chiede automaticamente i dati di un genitore o tutore: è
+  obbligatorio compilarli.
+- **Avviare una domanda di ammissione a socio** dalla scheda della persona,
+  indicando la categoria proposta (ordinario, sostenitore, onorario,
+  junior).
+- **Approvare o respingere la domanda**: l'approvazione richiede la data
+  della delibera del direttivo e assegna automaticamente il numero di
+  libro soci (mai riutilizzato, nemmeno se in futuro il socio dovesse
+  cessare). Da qui in poi la persona è socia, con stato "in attesa" finché
+  non pagherà la quota (funzione che arriva con la milestone M3).
+- **Emettere una tessera**: genera un numero tessera con QR per l'anno
+  sociale scelto; il PDF (formato tesserino, stampabile) si scarica con un
+  click.
+- **Consultare il libro soci a una data scelta**: mostra chi risultava
+  socio in quel momento, con possibilità di esportare l'elenco in CSV o
+  Excel.
+- **Importare un elenco soci già esistente da Excel o CSV**: carica il
+  file, abbina le colonne ai campi del gestionale, controlla l'anteprima
+  (le righe con errori vengono segnalate e non importate) e conferma.
+
 ## Anni sociali
 
 Da **Amministrazione → Anni sociali** puoi creare un nuovo anno sociale
@@ -43,7 +69,6 @@ reversibile da qui — usala solo quando l'anno è davvero terminato.
 
 | Milestone | Cosa diventa utilizzabile |
 |---|---|
-| M2 | Anagrafica soci, libro soci, tessere, import da Excel |
 | M3 | Quote, ricevute, prima nota — **da qui il gestionale è già utilizzabile per soci e cassa** |
 | M4 | Corsi, appello, attestati |
 | M5 | Iscrizione online ai corsi, consensi privacy, gestione minori |

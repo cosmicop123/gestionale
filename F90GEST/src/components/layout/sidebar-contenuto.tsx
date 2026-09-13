@@ -28,7 +28,7 @@ export function SidebarContenuto({
       <nav className="flex flex-1 flex-col gap-1">
         {voci.map((voce) => {
           const Icona = voce.icona;
-          const selezionata = pathname === voce.href;
+          const selezionata = pathname === voce.href || pathname.startsWith(`${voce.href}/`);
 
           if (!voce.attivo) {
             return (

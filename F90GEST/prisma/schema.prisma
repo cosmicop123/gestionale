@@ -133,6 +133,7 @@ model Utente {
   anniSocialiCreati       AnnoSociale[]         @relation("AnnoSocialeCreatedBy")
   cariceSocialiCreate     CaricaSociale[]       @relation("CaricaSocialeCreatedBy")
   sociCreati              Socio[]               @relation("SocioCreatedBy")
+  domandeAmmissioneCreate DomandaAmmissione[]   @relation("DomandaAmmissioneCreatedBy")
   sociStatoCreati         SocioStato[]          @relation("SocioStatoCreatedBy")
   tesseramentiCreati      Tesseramento[]        @relation("TesseramentoCreatedBy")
   tipiQuotaCreati         TipoQuota[]           @relation("TipoQuotaCreatedBy")
@@ -229,6 +230,7 @@ model Persona {
   utente                 Utente?                @relation("PersonaUtente")
   ruoli                  RuoloPersona[]
   socio                  Socio?
+  domandeAmmissione      DomandaAmmissione[]
   relazioniComeMinore    RelazioneFamiliare[]   @relation("MinoreRelazione")
   relazioniComeGenitore  RelazioneFamiliare[]   @relation("GenitoreRelazione")
   cariche                CaricaSociale[]
@@ -293,6 +295,35 @@ model RuoloPersona {
   @@index([personaId, tipo])
 }
 
+/// Domanda di ammissione a socio: esiste PRIMA che venga assegnato un
+/// numero di libro soci, che la specifica riserva alla delibera del
+/// direttivo, non alla domanda (§6 M2: "Il numero di libro soci si assegna
+/// alla delibera, non alla domanda"). All'approvazione, in un'unica
+/// transazione, si crea il Socio (con numero libro soci dal Numeratore) e
+/// il suo primo SocioStato, e questa riga viene collegata al Socio creato.
+model DomandaAmmissione {
+  id                String    @id @default(cuid())
+  personaId         String
+  persona           Persona   @relation(fields: [personaId], references: [id])
+  dataDomanda       DateTime
+  categoriaProposta String // ordinario | sostenitore | onorario | junior
+  note              String?
+  stato             String    @default("in_valutazione") // in_valutazione | approvata | respinta
+  dataEsito         DateTime?
+  motivoRigetto     String?
+  socioId           String?   @unique // valorizzato quando approvata
+  socio             Socio?    @relation(fields: [socioId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("DomandaAmmissioneCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  @@index([personaId])
+  @@index([stato])
+}
+
 /// Rapporto associativo. APPEND-ONLY nei dati identificativi: numeroLibroSoci,
 /// persona e data di ammissione non si modificano mai dopo la creazione.
 /// Lo stato corrente NON si aggiorna qui: vive in SocioStato (storico), così
@@ -314,8 +345,9 @@ model Socio {
   createdBy   Utente?  @relation("SocioCreatedBy", fields: [createdById], references: [id])
   // niente updatedAt/deletedAt: il record è immutabile per costruzione
 
-  storicoStati SocioStato[]
-  tesseramenti Tesseramento[]
+  storicoStati      SocioStato[]
+  tesseramenti      Tesseramento[]
+  domandaAmmissione DomandaAmmissione?
 
   @@index([numeroLibroSoci])
 }

@@ -12,17 +12,67 @@ muove nel codice, non ripete il **cosa**.
 
 ## Stato del progetto
 
-- **M0 (setup) e M1 (auth, ruoli, anagrafica ente, anni sociali, utenti)
-  completate.** Login reale con sessioni httpOnly in DB, rate limiting,
-  ruoli applicativi, wizard di primo avvio per personalizzare l'anagrafica
-  ente, gestione anni sociali (creazione/chiusura) e utenti (creazione,
-  modifica ruolo/stato, reset password) da Amministrazione.
-- Prossima milestone: **M2 — Persone e soci**: anagrafica, validazione CF,
-  flusso di ammissione, libro soci con data di riferimento, import Excel,
-  scheda socio, tessere.
+- **M0, M1 e M2 completate.** M0: setup. M1: auth, ruoli, anagrafica ente,
+  anni sociali, utenti. M2: anagrafica persone con validazione CF completa,
+  flusso domanda di ammissione → delibera → libro soci, import Excel/CSV,
+  scheda socio, tessere con QR in PDF formato tesserino.
+- Prossima milestone: **M3 — Quote, pagamenti, ricevute, prima nota** con
+  automatismi e transazioni. Dopo questa milestone il sistema deve essere
+  già utilizzabile in produzione per soci e cassa (§10 della specifica).
 - Le milestone si susseguono una alla volta con conferma dell'utente a fine
   di ognuna (si veda il piano di lavoro nella specifica, §10). Non scrivere
   codice per più di una milestone alla volta.
+
+### Note di continuità per M2 (da tenere presenti in M3+)
+
+- **Nuovo modello `DomandaAmmissione`**, non previsto nello schema
+  originale proposto in M0: necessario perché "il numero di libro soci si
+  assegna alla delibera, non alla domanda" (§6), quindi deve poter esistere
+  una domanda prima che esista un `Socio` (che richiede `numeroLibroSoci`
+  non nullo e univoco). Vedi `prisma/schema.prisma` e la migrazione
+  `20260913090850_aggiunge_domanda_ammissione`. Se emergono altri casi in
+  cui lo schema proposto in M0 non regge il flusso reale, estendere lo
+  schema con una nuova migrazione è normale e atteso, non un errore da
+  evitare — va solo documentato qui col perché.
+- **Stato iniziale del socio all'ammissione è `in_attesa`, non `attivo`**:
+  la specifica descrive il flusso come domanda → delibera → iscrizione →
+  **pagamento quota** → tessera. La transizione a `attivo` va implementata
+  in M3 dentro la stessa transazione che registra l'incasso della quota
+  (`prisma.socioStato.create` con `dataInizio` = data pagamento, senza mai
+  aggiornare la riga precedente: è append-only, vedi §7.1).
+- **`prossimoNumero()`** in `src/lib/numeratore.ts` è il punto unico per
+  ottenere un numero progressivo dentro una transazione (già usato per
+  `libro_soci`): riusarlo tale e quale per `ricevuta`, `protocollo_entrata`,
+  `protocollo_uscita`, `attestato` nelle prossime milestone.
+- **Import Excel/CSV**: il parsing con `xlsx` (SheetJS) avviene
+  interamente **nel browser** (`src/components/persona/importazione-soci.tsx`),
+  mai sul server — solo i dati già mappati sui campi noti (stringhe) vengono
+  inviati alla server action, che li **rivalida da capo** con la stessa
+  `validaRigaImport` usata per l'anteprima (mai fidarsi della validazione
+  lato client, §8). Questo evita anche l'esposizione delle vulnerabilità
+  note di SheetJS in lettura (che riguardano il parsing) al processo
+  server. Riusare lo stesso pattern per qualunque futuro import di file
+  (es. import corsi/iscrizioni, se mai richiesto).
+- **PDF generati on-demand, non persistiti**: la tessera
+  (`/soci/tessere/[id]/pdf`) viene rigenerata ad ogni richiesta invece di
+  essere salvata come `Allegato`. Va bene per un documento non
+  append-only-critico come la tessera; le **ricevute** (M3) sono invece
+  append-only per specifica (§7.4) e quindi il loro PDF andrà generato una
+  volta all'emissione e conservato (come `Allegato`), mai rigenerato al
+  volo con dati che potrebbero cambiare nel tempo (es. dati ente).
+- **Formato pagina PDF non standard** (tesserino ID-1, 85,6×54mm) con
+  `@react-pdf/renderer`: funziona passando `size={[larghezzaPt, altezzaPt]}`
+  a `<Page>`. Un visualizzatore PDF generico può mostrare margini vuoti
+  intorno se non rispetta esattamente il MediaBox nella sua anteprima: prima
+  di sospettare un bug di layout, verificare il MediaBox reale nel file
+  (`grep MediaBox` sul PDF) invece di fidarsi solo del rendering
+  dell'anteprima.
+- **Codice fiscale**: l'algoritmo (`src/lib/persona/codice-fiscale.ts`) è
+  stato verificato confrontandolo con la libreria open source indipendente
+  `codice-fiscale-js` (stesse tabelle carattere per carattere) — utile
+  saperlo se in futuro serve estendere la decodifica (es. aggiungere la
+  verifica del codice catastale del comune, oggi esplicitamente non
+  implementata per mancanza di una tabella dei comuni verificata).
 
 ### Note di continuità per M1 (da tenere presenti in M2+)
 

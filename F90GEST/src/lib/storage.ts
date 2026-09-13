@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 // Cartella di storage per allegati e documenti generati (§10, variabile
 // STORAGE_DIR): un'unica cartella facile da includere nel backup insieme
 // al database.
-const STORAGE_DIR = process.env.STORAGE_DIR ?? "./storage";
+export const STORAGE_DIR = process.env.STORAGE_DIR ?? "./storage";
 
 /**
  * Salva un file sul disco e crea la riga Allegato collegata (§5.7:

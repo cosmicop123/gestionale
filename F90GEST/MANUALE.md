@@ -292,15 +292,36 @@ Da **Privacy**:
   terzi) e **revocarne** uno su richiesta, indicando come è arrivata la
   richiesta di revoca.
 
+## Backup e ripristino
+
+Da **Amministrazione → Backup e ripristino**:
+
+- **Scarica backup** produce un unico file ZIP con database e tutti gli
+  allegati (ricevute, documenti, foto dei giustificativi, verbali, ecc.):
+  è l'unico file da conservare (es. su un disco esterno o uno spazio cloud
+  personale) per poter ripristinare tutto in caso di necessità. Si
+  consiglia di scaricarlo regolarmente e di conservarne più di una copia,
+  in posti diversi da dove gira il gestionale.
+- **Ripristino**: carica un file di backup precedentemente scaricato per
+  sostituire database e allegati attuali con quelli del backup. Prima di
+  procedere devi digitare la frase di conferma richiesta a video: è
+  un'operazione irreversibile (anche se viene comunque salvata
+  automaticamente una copia di sicurezza dello stato attuale prima di
+  sovrascrivere nulla). **Dopo il ripristino è necessario riavviare
+  l'applicazione** (o il container Docker) perché il ripristino sia
+  effettivo — un messaggio a video lo ricorda al termine dell'operazione.
+
+## Registro di controllo
+
+Da **Amministrazione → Registro di controllo** puoi consultare lo storico
+di chi ha fatto cosa nel gestionale (creazioni, modifiche, accessi,
+esportazioni, backup...), con data, ora, utente ed entità coinvolta. È un
+registro di sola consultazione: nessuna voce può essere modificata o
+cancellata, nemmeno dagli amministratori.
+
 ## Anni sociali
 
 Da **Amministrazione → Anni sociali** puoi creare un nuovo anno sociale
 (es. "2027/2028") indicando le date di inizio e fine, e chiudere un anno
 già concluso. **Attenzione**: la chiusura di un anno sociale non è
 reversibile da qui — usala solo quando l'anno è davvero terminato.
-
-## Cosa aspettarsi nelle prossime milestone
-
-| Milestone | Cosa diventa utilizzabile |
-|---|---|
-| M10 | Backup/ripristino da interfaccia, log di controllo |

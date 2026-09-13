@@ -4,24 +4,24 @@ Gestionale web self-hosted per la gestione di soci, tesseramenti,
 contabilità per cassa, corsi, eventi, libri sociali, documenti e
 adempimenti GDPR di un'associazione culturale italiana.
 
-> **Stato attuale: milestone M9 completata.** Login, ruoli, anagrafica
-> ente, soci con validazione del codice fiscale, libro soci, tessere,
-> conti, quote, pagamenti con ricevute e prima nota automatiche, corsi con
-> calendario lezioni, iscrizioni con lista d'attesa, appello (anche via QR),
-> registro presenze e attestati di frequenza, pagina pubblica di iscrizione
-> ai corsi con consensi privacy granulari e gestione dei minori, rendiconto
-> per cassa (Mod. D/Mod. E) con mappatura editabile, eventi con
-> partecipazioni, check-in, turni volontari, pratiche SIAE, sponsor e
-> raccolte fondi, libri sociali con riunioni/verbali/delibere numerati
-> progressivamente, registro di protocollo e archivio documenti con
-> versionamento, comunicazioni email segmentate con template a variabili e
-> modulo Privacy completo (registro dei trattamenti, richieste
-> dell'interessato, revoca dei consensi) sono attivi: **il gestionale è
-> utilizzabile in produzione per soci, cassa, corsi, iscrizioni online,
-> rendiconto, eventi, libri sociali, comunicazioni e adempimenti privacy.**
-> Backup/ripristino da interfaccia e log di controllo arrivano dalla
-> milestone finale (in corso, senza fermo per conferma). Vedi `CLAUDE.md`
-> per lo stato di dettaglio.
+> **Stato attuale: tutte le milestone del piano (M0-M10) sono completate.**
+> Login, ruoli, anagrafica ente, soci con validazione del codice fiscale,
+> libro soci, tessere, conti, quote, pagamenti con ricevute e prima nota
+> automatiche, corsi con calendario lezioni, iscrizioni con lista d'attesa,
+> appello (anche via QR), registro presenze e attestati di frequenza,
+> pagina pubblica di iscrizione ai corsi con consensi privacy granulari e
+> gestione dei minori, rendiconto per cassa (Mod. D/Mod. E) con mappatura
+> editabile, eventi con partecipazioni, check-in, turni volontari, pratiche
+> SIAE, sponsor e raccolte fondi, libri sociali con riunioni/verbali/
+> delibere numerati progressivamente, registro di protocollo e archivio
+> documenti con versionamento, comunicazioni email segmentate con template
+> a variabili, modulo Privacy completo (registro dei trattamenti, richieste
+> dell'interessato, revoca dei consensi), backup/ripristino da interfaccia
+> (un unico ZIP con database e allegati) e registro di controllo
+> consultabile da Amministrazione: **il gestionale è utilizzabile in
+> produzione per tutti i moduli previsti dalla specifica di progetto.** Vedi
+> `CLAUDE.md` per lo stato di dettaglio e le note di continuità di ogni
+> milestone.
 
 ## Requisiti
 

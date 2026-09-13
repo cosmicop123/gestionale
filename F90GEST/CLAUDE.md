@@ -51,14 +51,95 @@ muove nel codice, non ripete il **cosa**.
   con template a variabili e invio via SMTP (nodemailer), registro dei
   trattamenti, richieste dell'interessato (accesso con esportazione dati,
   rettifica, cancellazione) con registrazione dell'esito, revoca dei
-  consensi granulari raccolti in M5.
-- **Da qui in avanti l'utente ha chiesto di procedere in automatico su
-  tutte le milestone rimanenti (M8-M10), senza fermarsi per conferma dopo
-  ognuna** — istruzione esplicita che sostituisce, per il resto del
-  progetto, il fermo-dopo-milestone previsto da §10.
-- Prossima milestone: **M10 — Backup/restore da interfaccia**, log di
-  controllo (UI dell'AuditLog), rifinitura finale del manuale utente e
-  hardening.
+  consensi granulari raccolti in M5. M10: backup/ripristino da interfaccia
+  (un unico ZIP scaricabile con database e allegati, ripristino con backup
+  di sicurezza automatico e conferma esplicita), registro di controllo
+  consultabile da Amministrazione, intestazioni di sicurezza HTTP di base.
+- **Tutte le milestone del piano (M0-M10) sono ora completate**, comprese
+  quelle svolte in automatico senza fermo per conferma come richiesto
+  dall'utente dopo M5 (§10 prevedeva una conferma dopo ognuna; da M6 in poi
+  si è proceduto in sequenza fino a qui). Il progetto è nello stato
+  descritto da `README.md`: utilizzabile in produzione per tutti i moduli
+  del piano originale. Eventuale lavoro successivo (richieste dell'utente,
+  bug, rifiniture) prosegue da qui, non c'è una "M11" implicita.
+
+### Note di continuità per M10 (milestone finale — utile per lavoro futuro)
+
+- **Nessuna migrazione Prisma necessaria**: M10 non introduce nuovi modelli,
+  solo UI su dati/file già esistenti (`AuditLog`) o generati al volo
+  (l'archivio di backup).
+- **Il backup usa l'Online Backup API di SQLite, non una copia grezza del
+  file**: `creaArchivioBackup` (`src/lib/backup/archivio.ts`) apre una
+  connessione `better-sqlite3` di sola lettura separata da quella in uso
+  dall'app e chiama `Database#backup(...)`, l'unico modo corretto per
+  ottenere uno snapshot consistente di un database SQLite mentre il
+  processo che lo usa continua a scrivere — una copia del file col
+  filesystem rischierebbe di catturarlo a metà di una scrittura. Storage e
+  database finiscono in un unico ZIP (`adm-zip`, scelto perché supporta sia
+  creazione sia estrazione con un'unica libreria, a differenza di
+  `archiver`, usato solo per crearli — installato e poi tolto durante
+  questa milestone).
+- **Percorso reale del database, non quello "logico"**: il driver adapter
+  (`src/lib/prisma.ts`) passa `DATABASE_URL` a better-sqlite3, che risolve
+  un percorso `file:` relativo a `process.cwd()` — diverso da come lo
+  risolve la CLI Prisma (relativo a `prisma/schema.prisma`). Per questo
+  `risolviPercorsoDatabase` (`src/lib/backup/percorso-database.ts`)
+  replica la risoluzione di better-sqlite3, non quella della CLI: leggere
+  il file dal posto sbagliato avrebbe fatto un backup vuoto o del database
+  di sviluppo sbagliato senza errori evidenti.
+- **Il ripristino non riavvia da solo la connessione al database**: dopo
+  aver sovrascritto il file del database e la cartella di storage,
+  `ripristinaBackup` (`src/lib/backup/actions.ts`) chiama
+  `prisma.$disconnect()` ma il messaggio di esito dice esplicitamente
+  all'amministratore di **riavviare l'applicazione** (o il container
+  Docker). Scelta deliberata, non un limite da rimuovere: sovrascrivere il
+  file mentre lo stesso processo lo tiene aperto è un'area storicamente
+  delicata per SQLite (comportamento dipendente da OS/versione), e per
+  un'operazione così rara e ad alto impatto un riavvio esplicito è più
+  sicuro di un tentativo di "hot swap" della connessione. Prima di
+  sovrascrivere, viene comunque salvata in `storage/backup-pre-ripristino/`
+  una copia di sicurezza dello stato attuale (così un ripristino sbagliato
+  resta recuperabile), e l'azione richiede di digitare la frase
+  `RIPRISTINA` oltre al ruolo amministratore, per lo stesso principio di
+  conferma esplicita per le azioni irreversibili già seguito nel resto
+  dell'app.
+- **Convalida dell'archivio caricato prima di scrivere qualunque cosa su
+  disco**: `validaArchivioBackup` verifica sia la presenza del file
+  `database.db` sia l'assenza di percorsi `..`/assoluti nelle voci
+  dell'archivio (path traversal). Verificato con un test che l'assenza di
+  `..` sopravvive solo se il nome della voce viene forzato direttamente
+  (`entry.entryName = ...`) e poi lo ZIP viene riscritto/riletto: il metodo
+  pubblico `addFile` di `adm-zip` normalizza già da solo i `..` iniziali,
+  quindi un test costruito solo con `addFile` non avrebbe verificato nulla
+  di reale — l'attacco realistico è un file ZIP caricato creato con un
+  altro strumento, non con `adm-zip` stesso.
+- **Ripristino volutamente non coperto da e2e**: a differenza di quasi
+  tutto il resto dell'app, il flusso di ripristino non ha un test
+  Playwright end-to-end, perché eseguirlo davvero disconnetterebbe la
+  connessione Prisma condivisa dal processo del server usato da **tutti**
+  i test della suite (Playwright riusa lo stesso `webServer` per l'intera
+  run, per `playwright.config.ts`), con effetti imprevedibili sui test
+  successivi. La logica di validazione (`validaArchivioBackup`) è comunque
+  coperta da unit test, e l'intero ciclo creazione→corruzione→ripristino è
+  stato verificato manualmente con uno script isolato (database e cartella
+  di storage temporanei, variabili d'ambiente puntate lì) prima di
+  considerare la funzionalità completa — non incluso nel repository perché
+  era solo per la verifica una tantum, non un test da mantenere.
+- **Registro di controllo filtrato lato client, non paginato lato
+  server**: `TabRegistroControllo` riceve le ultime 300 voci già ordinate
+  dal server e le filtra in browser con un campo di testo — scelta
+  adeguata alla scala di un'associazione culturale locale (poche centinaia/
+  migliaia di voci), da rivedere con una paginazione server-side reale se
+  il volume di audit log dovesse crescere molto oltre questo.
+- **Intestazioni di sicurezza HTTP senza CSP**: aggiunte in
+  `next.config.ts` (`X-Content-Type-Options`, `X-Frame-Options`,
+  `Referrer-Policy`, `Permissions-Policy` con `camera=(self)` per lo
+  scanner QR). Nessuna Content-Security-Policy: l'app usa script/stili
+  inline generati da Next/Tailwind in più punti e una CSP realmente
+  efficace richiederebbe un audit dedicato pagina per pagina, fuori scope
+  qui — meglio nessuna CSP che una permissiva al punto da non proteggere
+  nulla (§12, stesso principio di "non inventare" applicato alla
+  sicurezza: meglio essere onesti sui limiti che simulare una protezione).
 
 ### Note di continuità per M9 (da tenere presenti in M10)
 
@@ -494,7 +575,8 @@ Su richiesta esplicita dell'utente (non parte del piano a milestone), durante M7
   per singolo file): i file di test sono numerati (`01-login`, `02-soci`,
   `03-contabilita`, `04-corsi`, `05-iscrizione-pubblica`, `06-rendiconto`,
   `07-quota-corso`, `08-eventi`, `09-libri-sociali-documenti`,
-  `10-comunicazioni-privacy`) apposta, perché Playwright con `workers: 1`
+  `10-comunicazioni-privacy`, `11-backup-audit`) apposta, perché Playwright
+  con `workers: 1`
   li esegue in ordine alfabetico e alcuni assumono lo stato lasciato dai
   precedenti (es. `02-soci` richiede che l'onboarding sia già stato
   completato da `01-login`,

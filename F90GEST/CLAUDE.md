@@ -12,19 +12,84 @@ muove nel codice, non ripete il **cosa**.
 
 ## Stato del progetto
 
-- **M0, M1, M2 e M3 completate.** M0: setup. M1: auth, ruoli, anagrafica
+- **M0, M1, M2, M3 e M4 completate.** M0: setup. M1: auth, ruoli, anagrafica
   ente, anni sociali, utenti. M2: anagrafica persone con validazione CF
   completa, flusso domanda di ammissione → delibera → libro soci, import
   Excel/CSV, scheda socio, tessere. M3: conti, tipi di quota, quote,
   pagamenti con generazione automatica di movimento e ricevuta, prima
   nota con storni, riporto automatico del saldo alla chiusura dell'anno
-  sociale. **Da qui il sistema è utilizzabile in produzione per soci e
-  cassa**, come richiesto dal piano a milestone (§10).
-- Prossima milestone: **M4 — Corsi**: calendario, iscrizioni interne,
-  appello mobile, registro PDF, attestati.
+  sociale. M4: corsi con calendario lezioni generato automaticamente,
+  iscrizioni interne con gestione della lista d'attesa, appello mobile
+  (manuale o via scansione QR) con salvataggio immediato, registro
+  presenze in PDF, calcolo automatico di ore frequentate e percentuale di
+  presenza, generazione massiva degli attestati solo per chi supera la
+  soglia, scheda docente con accesso limitato ai propri corsi. **Da qui il
+  sistema è utilizzabile in produzione anche per corsi e attestati**, come
+  richiesto dal piano a milestone (§10).
+- Prossima milestone: **M5 — Pagina pubblica di iscrizione**: consensi
+  GDPR, gestione minori.
 - Le milestone si susseguono una alla volta con conferma dell'utente a fine
   di ognuna (si veda il piano di lavoro nella specifica, §10). Non scrivere
   codice per più di una milestone alla volta.
+
+### Note di continuità per M4 (da tenere presenti in M5+)
+
+- **Nessuna migrazione Prisma necessaria**: lo schema proposto in M0 già
+  copriva per intero i modelli di M4 (`Corso`, `CorsoDocente`, `Modulo`,
+  `Lezione`, `IscrizioneCorso`, `Presenza`, `Attestato`, `Questionario` e
+  collegati) — verificato prima di iniziare a scrivere codice.
+- **Calendario lezioni**: `src/lib/corso/calendario.ts` (`generaCalendarioLezioni`)
+  è una funzione pura (nessun accesso al DB) che calcola le date dalla
+  cadenza settimanale + festività da escludere; usata da `creaCorso`
+  (`src/lib/corso/actions.ts`) dentro un'unica transazione insieme alla
+  creazione del corso e delle righe `Lezione` (`createMany`). La modifica
+  di un corso già creato (`modificaCorso`) non rigenera mai il calendario,
+  per non rischiare di disallineare lezioni/presenze già registrate: le
+  lezioni si aggiungono/modificano singolarmente dalla scheda corso.
+- **Calcolo ore/percentuale di presenza**: `src/lib/presenza/calcolo-presenze.ts`
+  è un'altra funzione pura (`calcolaPresenze`, `haDirittoAttestato`), con
+  la regola di business esplicitata nei commenti: solo le lezioni con
+  `stato: "svolta"` contano al denominatore (una lezione rinviata/annullata
+  non deve penalizzare la percentuale), e solo `presente`/`ritardo` contano
+  come ore frequentate. `src/lib/presenza/riepilogo.ts`
+  (`calcolaRiepilogoPresenzeIscrizione`) è il punto che interroga il DB e
+  costruisce l'input per la funzione pura — da riusare per qualunque
+  futuro calcolo di frequenza (es. eventi in M7, se mai richiesto).
+- **Lista d'attesa iscrizioni** (`src/lib/iscrizione-corso/actions.ts`):
+  `iscriviPersona` assegna automaticamente lo stato `confermato` o
+  `in_lista_attesa` in base alla capienza massima del corso; `ritiraIscrizione`
+  promuove automaticamente la prima persona in lista d'attesa (per data di
+  iscrizione) quando si libera un posto, dentro la stessa transazione dello
+  storno) — mai un'assegnazione manuale dei posti fuori ordine.
+- **Attestati**: stesso pattern delle ricevute di M3
+  (`src/lib/attestato/genera.ts`) — numerazione atomica via `prossimoNumero`
+  dentro la transazione che crea la riga `Attestato`, PDF generato e
+  allegato solo dopo il commit (`generaEAllegaPdfAttestato`). La
+  generazione massiva (`src/lib/attestato/actions.ts`, `generaAttestatiCorso`)
+  itera sulle iscrizioni non ritirate senza attestato, salta chi non
+  raggiunge `Corso.percentualeMinimaPresenzaAttestato` e non tocca mai chi
+  ha già un attestato (mai una doppia emissione).
+- **Registro presenze PDF rigenerato al volo** (non persistito): a
+  differenza delle ricevute/attestati non è un documento
+  append-only-critico, riflette semplicemente lo stato corrente delle
+  presenze — stesso pattern della tessera di M2.
+- **Appello via QR senza nuove dipendenze npm**: la scansione usa l'API
+  nativa del browser `BarcodeDetector` (feature-detected, con messaggio di
+  fallback esplicito sull'appello manuale se non supportata, es. Firefox/Safari
+  meno recenti) invece di aggiungere una libreria di scansione non prevista
+  dallo stack fisso (§12). Ogni iscrizione ha un proprio QR (generato con
+  `qrcode`, già in uso per le tessere) che codifica semplicemente il proprio
+  id: la scansione da parte del docente/segreteria autenticato richiama la
+  stessa `registraPresenza` usata dall'appello manuale (`metodo: "qr"`), non
+  è un self-check-in pubblico (i soci non hanno un proprio accesso al
+  gestionale, §6).
+- **Scheda docente con accesso limitato**: il ruolo `docente` vede in
+  `/corsi` solo i corsi dove `CorsoDocente.personaId` coincide con
+  `Utente.personaId` della propria sessione (`src/app/(app)/corsi/page.tsx`
+  e `[corsoId]/page.tsx`, con redirect se un docente tenta di aprire un
+  corso non proprio); può fare l'appello e cambiare lo stato di una lezione
+  (`modificaLezione`, `registraPresenza`) ma non gestire iscrizioni, docenti
+  o generare attestati (resta riservato ad amministratore/segreteria).
 
 ### Note di continuità per M3 (da tenere presenti in M4+)
 
@@ -76,13 +141,18 @@ muove nel codice, non ripete il **cosa**.
 - **Test e2e multipli condividono un solo database** (`e2e-test.db`,
   ricreato una volta sola all'inizio della run da `global-setup.ts`, non
   per singolo file): i file di test sono numerati (`01-login`, `02-soci`,
-  `03-contabilita`) apposta, perché Playwright con `workers: 1` li esegue
-  in ordine alfabetico e alcuni assumono lo stato lasciato dai precedenti
-  (es. `02-soci` richiede che l'onboarding sia già stato completato da
-  `01-login`, e che il socio creato sia il primo del libro soci). Se si
-  aggiungono nuovi file di test E2E che dipendono da uno stato pregresso,
-  dar loro un prefisso numerico coerente con l'ordine di dipendenza invece
-  di dare per scontato l'ordine alfabetico naturale dei nomi.
+  `03-contabilita`, `04-corsi`) apposta, perché Playwright con `workers: 1`
+  li esegue in ordine alfabetico e alcuni assumono lo stato lasciato dai
+  precedenti (es. `02-soci` richiede che l'onboarding sia già stato
+  completato da `01-login`, e `04-corsi` riusa la persona "Giulia Verdi"
+  creata e ammessa a socia in `03-contabilita` per testare un'iscrizione).
+  Se si aggiungono nuovi file di test E2E che dipendono da uno stato
+  pregresso, dar loro un prefisso numerico coerente con l'ordine di
+  dipendenza invece di dare per scontato l'ordine alfabetico naturale dei
+  nomi. **Nota locale**: in questo ambiente di sviluppo la variabile
+  d'ambiente `PLAYWRIGHT_CHROMIUM_PATH` (letta da `playwright.config.ts`)
+  va impostata a `/opt/pw-browsers/chromium` per eseguire `test:e2e`,
+  altrimenti Playwright cerca l'eseguibile "headless shell" non installato.
 
 ### Note di continuità per M2 (da tenere presenti in M3+)
 

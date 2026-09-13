@@ -29,8 +29,11 @@ disponibili.
 
 | Ruolo | Cosa può fare oggi |
 |---|---|
-| Amministratore | Tutto: dati ente, anni sociali, utenti. I moduli soci/contabilità/corsi arriveranno con le prossime milestone. |
-| Segreteria, Tesoriere, Docente, Sola lettura | Possono accedere ma non vedono ancora la sezione Amministrazione: i moduli di loro competenza non sono ancora stati costruiti. |
+| Amministratore | Tutto: dati ente, anni sociali, utenti, soci, contabilità, corsi. |
+| Segreteria | Soci, contabilità e corsi (gestione completa: iscrizioni, docenti, attestati). |
+| Tesoriere | Soci in consultazione, contabilità in scrittura. |
+| Docente | Vede solo i propri corsi in **Corsi**: può fare l'appello e segnare lo stato delle lezioni, non gestire iscrizioni o generare attestati. |
+| Sola lettura | Consulta soci, contabilità e corsi senza poter modificare nulla. |
 
 ## Soci
 
@@ -87,6 +90,38 @@ segreteria e sola lettura in sola consultazione):
   il gestionale calcola da solo il saldo finale di ogni conto; il nuovo
   anno sociale parte automaticamente con quel saldo come saldo iniziale.
 
+## Corsi
+
+Da **Corsi** puoi:
+
+- **Creare un nuovo corso**, con la possibilità di **generare
+  automaticamente il calendario delle lezioni**: basta indicare data di
+  inizio, numero di lezioni, giorni della settimana e durata di ciascuna
+  lezione (ed eventuali festività da escludere); in alternativa si possono
+  aggiungere le lezioni una alla volta in un secondo momento.
+- **Assegnare uno o più docenti** al corso, dalla scheda del corso.
+- **Iscrivere una persona al corso**: se la capienza massima è già
+  raggiunta, l'iscrizione va automaticamente **in lista d'attesa** e viene
+  promossa a "confermata" in automatico non appena si libera un posto
+  (es. per un ritiro).
+- **Fare l'appello** da cellulare o tablet durante la lezione: tocca lo
+  stato di presenza per ciascun iscritto (presente, assente, giustificato,
+  ritardo) e viene salvato subito, senza bisogno di un pulsante "salva"
+  finale. In alternativa, ogni iscritto ha un proprio codice QR (visibile
+  dall'icona accanto al suo nome): inquadrandolo con la fotocamera durante
+  l'appello lo si segna presente in un tocco (funzione disponibile solo nei
+  browser che supportano la scansione QR nativa; altrimenti si usa
+  l'appello manuale).
+- **Scaricare il registro presenze in PDF** di ogni lezione, pronto per la
+  firma di chi era presente.
+- **Generare gli attestati di frequenza in blocco** a fine corso: il
+  gestionale calcola da solo ore frequentate e percentuale di presenza per
+  ciascun iscritto e genera l'attestato solo per chi supera la soglia
+  minima impostata sul corso (di default il 70%, modificabile).
+- Un **docente** vede in questa sezione solo i corsi a cui è stato
+  assegnato, e può fare l'appello ma non gestire iscrizioni o generare
+  attestati (riservato ad amministratore e segreteria).
+
 ## Anni sociali
 
 Da **Amministrazione → Anni sociali** puoi creare un nuovo anno sociale
@@ -98,7 +133,6 @@ reversibile da qui — usala solo quando l'anno è davvero terminato.
 
 | Milestone | Cosa diventa utilizzabile |
 |---|---|
-| M4 | Corsi, appello, attestati |
 | M5 | Iscrizione online ai corsi, consensi privacy, gestione minori |
 | M6 | Rendiconto per cassa, report contabili |
 | M7 | Eventi, pratiche SIAE, sponsor, raccolte fondi |

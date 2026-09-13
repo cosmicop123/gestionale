@@ -7,17 +7,20 @@ import { TabUtenti } from "./tab-utenti";
 import { TabInformativa } from "./tab-informativa";
 import { TabBackup } from "./tab-backup";
 import { TabRegistroControllo } from "./tab-registro-controllo";
+import { TabSitoPubblico } from "./tab-sito-pubblico";
+import { ottieniParametriSitoPubblico } from "@/lib/sito-pubblico/parametri";
 import type { DatiEnte } from "@/lib/validazioni/ente";
 
 export default async function AmministrazionePage() {
   const utenteCorrente = await richiediRuolo(["amministratore"]);
 
-  const [associazione, anniSociali, utenti, informativaCorrente, vociAudit] = await Promise.all([
+  const [associazione, anniSociali, utenti, informativaCorrente, vociAudit, configurazioneSitoPubblico] = await Promise.all([
     prisma.associazione.findFirst(),
     prisma.annoSociale.findMany({ orderBy: { dataInizio: "desc" } }),
     prisma.utente.findMany({ where: { deletedAt: null }, orderBy: { email: "asc" } }),
     prisma.informativa.findFirst({ orderBy: { dataPubblicazione: "desc" } }),
     prisma.auditLog.findMany({ include: { utente: true }, orderBy: { timestamp: "desc" }, take: 300 }),
+    ottieniParametriSitoPubblico(),
   ]);
 
   if (!associazione) {
@@ -65,6 +68,7 @@ export default async function AmministrazionePage() {
           <TabsTrigger value="anni-sociali">Anni sociali</TabsTrigger>
           <TabsTrigger value="utenti">Utenti</TabsTrigger>
           <TabsTrigger value="informativa">Informativa privacy</TabsTrigger>
+          <TabsTrigger value="sito-pubblico">Sito pubblico</TabsTrigger>
           <TabsTrigger value="backup">Backup e ripristino</TabsTrigger>
           <TabsTrigger value="registro-controllo">Registro di controllo</TabsTrigger>
         </TabsList>
@@ -79,6 +83,9 @@ export default async function AmministrazionePage() {
         </TabsContent>
         <TabsContent value="informativa">
           <TabInformativa informativaCorrente={informativaCorrente} />
+        </TabsContent>
+        <TabsContent value="sito-pubblico">
+          <TabSitoPubblico configurazione={configurazioneSitoPubblico} />
         </TabsContent>
         <TabsContent value="backup">
           <TabBackup />

@@ -319,6 +319,30 @@ esportazioni, backup...), con data, ora, utente ed entità coinvolta. È un
 registro di sola consultazione: nessuna voce può essere modificata o
 cancellata, nemmeno dagli amministratori.
 
+## Sito pubblico
+
+Da **Amministrazione → Sito pubblico** puoi generare un sito vetrina
+statico (una singola pagina HTML, senza bisogno di alcun server o
+programmazione) con le informazioni dell'associazione e l'elenco dei corsi
+attualmente aperti alle iscrizioni o in corso:
+
+- **Presentazione** (facoltativa): un breve testo mostrato nella sezione
+  "Chi siamo" del sito.
+- **URL pubblico del gestionale** (facoltativo): se lo indichi, i corsi nel
+  sito generato avranno un pulsante "Iscriviti" che porta alla pagina
+  pubblica di iscrizione di questo gestionale. Utile perché il sito vetrina
+  può essere ospitato altrove (il tuo spazio web, un hosting statico
+  gratuito, ecc.), non necessariamente sullo stesso indirizzo del
+  gestionale.
+- **Tre template pronti** — Classico (sobrio, istituzionale), Moderno
+  (essenziale, corsi in schede) e Vivace (caldo, colorato): per ciascuno
+  puoi cliccare **Anteprima** per vederlo subito nel browser, oppure
+  **Scarica sito** per ottenere un file ZIP con la pagina pronta da
+  pubblicare dove preferisci.
+- Il gestionale genera il file ma **non lo pubblica online da solo**: la
+  pubblicazione (caricarlo sul proprio hosting) resta un passaggio a tua
+  cura.
+
 ## Anni sociali
 
 Da **Amministrazione → Anni sociali** puoi creare un nuovo anno sociale

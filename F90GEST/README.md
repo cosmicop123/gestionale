@@ -19,9 +19,11 @@ adempimenti GDPR di un'associazione culturale italiana.
 > dell'interessato, revoca dei consensi), backup/ripristino da interfaccia
 > (un unico ZIP con database e allegati) e registro di controllo
 > consultabile da Amministrazione: **il gestionale è utilizzabile in
-> produzione per tutti i moduli previsti dalla specifica di progetto.** Vedi
-> `CLAUDE.md` per lo stato di dettaglio e le note di continuità di ogni
-> milestone.
+> produzione per tutti i moduli previsti dalla specifica di progetto.**
+> Aggiunta fuori piano: generatore di un sito vetrina statico (info
+> associazione e corsi disponibili) con tre template pronti, scaricabile in
+> ZIP da Amministrazione → Sito pubblico. Vedi `CLAUDE.md` per lo stato di
+> dettaglio e le note di continuità di ogni milestone.
 
 ## Requisiti
 

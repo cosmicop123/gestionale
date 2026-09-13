@@ -122,6 +122,17 @@ async function main() {
       valore: "70",
       descrizione: "Percentuale minima di presenza di default per l'emissione dell'attestato di un nuovo corso.",
     },
+    {
+      chiave: "sito_pubblico.presentazione",
+      valore: "",
+      descrizione: "Testo di presentazione dell'associazione mostrato nel sito pubblico generabile da Amministrazione.",
+    },
+    {
+      chiave: "sito_pubblico.url_base",
+      valore: "",
+      descrizione:
+        "URL pubblico dell'istanza del gestionale, usato per costruire i link di iscrizione ai corsi nel sito pubblico generabile (il sito può essere ospitato altrove).",
+    },
   ];
 
   for (const parametro of parametriDefault) {

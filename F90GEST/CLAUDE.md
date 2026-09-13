@@ -63,6 +63,59 @@ muove nel codice, non ripete il **cosa**.
   del piano originale. Eventuale lavoro successivo (richieste dell'utente,
   bug, rifiniture) prosegue da qui, non c'è una "M11" implicita.
 
+### Nota fuori milestone: generatore di sito pubblico con template
+
+Su richiesta esplicita dell'utente (non parte del piano a milestone), dopo
+M10: prima di affrontare gli installer desktop (Windows/Linux) richiesti
+inizialmente, l'utente ha chiesto di aggiungere una funzionalità per
+generare un sito HTML vetrina con le informazioni dell'associazione e i
+corsi disponibili, con 2-3 template preconfezionati tra cui scegliere.
+
+- **Nuova tab "Sito pubblico" in Amministrazione** (`src/app/(app)/amministrazione/tab-sito-pubblico.tsx`,
+  solo ruolo amministratore): un form salva due nuovi `Parametro`
+  (`sito_pubblico.presentazione`, testo libero facoltativo per la sezione
+  "Chi siamo"; `sito_pubblico.url_base`, l'URL pubblico dell'istanza del
+  gestionale usato per costruire i link "Iscriviti" nel sito generato,
+  dato che il sito può essere ospitato altrove) tramite
+  `src/lib/sito-pubblico/parametri.ts` — stesso pattern chiave/valore già
+  usato per i parametri di contabilità, riusato qui per una configurazione
+  di presentazione/branding invece che fiscale.
+- **Tre template puri e testabili** (`src/lib/sito-pubblico/templates/{classico,moderno,vivace}.ts`):
+  ciascuno è una funzione `(dati: DatiSitoPubblico) => string` che produce
+  un singolo `index.html` autosufficiente (CSS inline, nessuna dipendenza
+  esterna, nessun JS) — "classico" (serif, blu notte/crema, istituzionale),
+  "moderno" (sans-serif, blu/bianco, corsi a griglia), "vivace" (caldo,
+  terracotta/senape, arrotondato). `src/lib/sito-pubblico/dati.ts` costruisce
+  i dati comuni (anagrafica ente, presentazione, elenco corsi con stato
+  `aperto_iscrizioni`/`in_corso` — mai bozze, conclusi o annullati) una sola
+  volta, condivisi dai tre template.
+- **Escape HTML esplicito, con test**: titoli/descrizioni dei corsi e il
+  testo di presentazione vengono dal database, non da un template fidato —
+  `src/lib/sito-pubblico/escape-html.ts` (`escapeHtml`/`escapeHtmlConACapo`)
+  è usato ovunque questi contenuti finiscono nel markup, altrimenti un
+  titolo di corso con `&`/`<`/`>` romperebbe il sito generato. Coperto da
+  unit test insieme ai tre template (`templates.test.ts`, con un fixture
+  che include caratteri speciali per verificare che vengano davvero
+  escapati e non finiscano letterali nell'HTML prodotto).
+- **Anteprima in browser separata dal download ZIP**: due rotte GET,
+  `/amministrazione/sito-pubblico/anteprima?template=X` (restituisce l'HTML
+  direttamente, `Content-Type: text/html`, per vedere il risultato prima di
+  scaricare) e `/amministrazione/sito-pubblico/scarica?template=X`
+  (impacchetta lo stesso HTML in uno ZIP con `adm-zip`, già dipendenza da
+  M10, riusata qui invece di introdurne un'altra). Stesso principio del
+  verbale PDF di M8 (generato al volo, mai persistito) applicato a un altro
+  tipo di documento generato on-demand.
+- **Il sito generato NON viene pubblicato dal gestionale**: è un file da
+  scaricare e ospitare dove l'associazione preferisce (spazio web proprio,
+  hosting statico, ecc.) — dichiarato esplicitamente nell'interfaccia,
+  perché generare un sito e "pubblicarlo" sono due funzionalità diverse e
+  questa milestone-fuori-piano copre solo la prima.
+- **`Corso.quotaPartecipazione` non ha un campo `descrizione` obbligatorio**:
+  se un corso non ha descrizione o sede, quella riga viene omessa dalla
+  scheda del corso nel sito generato invece di mostrare un placeholder
+  vuoto o "non specificato" — coerente con l'idea che il sito vetrina deve
+  restare pulito anche con dati incompleti.
+
 ### Note di continuità per M10 (milestone finale — utile per lavoro futuro)
 
 - **Nessuna migrazione Prisma necessaria**: M10 non introduce nuovi modelli,
@@ -575,8 +628,8 @@ Su richiesta esplicita dell'utente (non parte del piano a milestone), durante M7
   per singolo file): i file di test sono numerati (`01-login`, `02-soci`,
   `03-contabilita`, `04-corsi`, `05-iscrizione-pubblica`, `06-rendiconto`,
   `07-quota-corso`, `08-eventi`, `09-libri-sociali-documenti`,
-  `10-comunicazioni-privacy`, `11-backup-audit`) apposta, perché Playwright
-  con `workers: 1`
+  `10-comunicazioni-privacy`, `11-backup-audit`, `12-sito-pubblico`) apposta,
+  perché Playwright con `workers: 1`
   li esegue in ordine alfabetico e alcuni assumono lo stato lasciato dai
   precedenti (es. `02-soci` richiede che l'onboarding sia già stato
   completato da `01-login`,

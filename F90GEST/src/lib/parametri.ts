@@ -16,6 +16,7 @@ export async function ottieniParametriContabilita() {
           "contabilita.soglia_giustificativo_obbligatorio_euro",
           "contabilita.rendiconto_forma_aggregata",
           "contabilita.nature_fiscali_soggette_a_bollo",
+          "contabilita.mappatura_categorie_rendiconto",
         ],
       },
     },
@@ -32,5 +33,29 @@ export async function ottieniParametriContabilita() {
     natureFiscaliSoggetteABollo: JSON.parse(
       mappa.get("contabilita.nature_fiscali_soggette_a_bollo") ?? '["corrispettivo_specifico","attivita_commerciale"]'
     ) as string[],
+    mappaturaCategorieRendiconto: JSON.parse(
+      mappa.get("contabilita.mappatura_categorie_rendiconto") ?? JSON.stringify(MAPPATURA_RENDICONTO_DEFAULT)
+    ) as Record<string, string>,
   };
 }
+
+// Default ragionevole, non vincolante (§12): l'associazione lo rivede da
+// Contabilità → Rendiconto in base alla propria situazione reale.
+export const MAPPATURA_RENDICONTO_DEFAULT: Record<string, string> = {
+  quote_associative: "A",
+  corrispettivi_specifici: "A",
+  erogazioni_liberali: "A",
+  contributi_pubblici: "A",
+  contributi_privati: "A",
+  sponsorizzazioni: "B",
+  raccolte_fondi: "C",
+  attivita_commerciali: "B",
+  altre_entrate: "E",
+  acquisti_beni_servizi: "A",
+  godimento_beni_terzi: "E",
+  compensi_collaborazioni: "E",
+  oneri_diversi_gestione: "E",
+  erogazioni_liberali_effettuate: "A",
+  imposte_tasse: "E",
+  altre_uscite: "E",
+};

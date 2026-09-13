@@ -1,21 +1,27 @@
 import { richiediRuolo } from "@/lib/auth/richiedi-utente";
 import { prisma } from "@/lib/prisma";
 import { calcolaSaldoConto } from "@/lib/contabilita/saldo";
+import { ottieniDatiRendiconto } from "@/lib/rendiconto/dati";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TabPrimaNota } from "./tab-prima-nota";
 import { TabConti } from "./tab-conti";
 import { TabTipiQuota } from "./tab-tipi-quota";
 import { TabQuote } from "./tab-quote";
 import { TabRicevute } from "./tab-ricevute";
+import { TabRendiconto } from "./tab-rendiconto";
 
 export default async function ContabilitaPage() {
   const utente = await richiediRuolo(["amministratore", "tesoriere", "segreteria", "sola_lettura"]);
   const puoScrivere = utente.ruolo === "amministratore" || utente.ruolo === "tesoriere";
 
-  const annoSocialeCorrente = await prisma.annoSociale.findFirst({
-    where: { chiuso: false },
-    orderBy: { dataInizio: "desc" },
-  });
+  const [annoSocialeCorrente, anniSociali] = await Promise.all([
+    prisma.annoSociale.findFirst({ where: { chiuso: false }, orderBy: { dataInizio: "desc" } }),
+    prisma.annoSociale.findMany({ orderBy: { dataInizio: "desc" } }),
+  ]);
+
+  const datiRendicontoPerAnno = await Promise.all(
+    anniSociali.map((anno) => ottieniDatiRendiconto(anno.id))
+  );
 
   const [conti, tipiQuota, quote, ricevute, movimenti, soci] = await Promise.all([
     prisma.conto.findMany({
@@ -96,6 +102,7 @@ export default async function ContabilitaPage() {
           <TabsTrigger value="tipi-quota">Tipi di quota</TabsTrigger>
           <TabsTrigger value="quote">Quote</TabsTrigger>
           <TabsTrigger value="ricevute">Ricevute</TabsTrigger>
+          <TabsTrigger value="rendiconto">Rendiconto</TabsTrigger>
         </TabsList>
         <TabsContent value="prima-nota">
           <TabPrimaNota movimenti={movimenti} conti={conti} puoScrivere={puoScrivere} />
@@ -116,6 +123,9 @@ export default async function ContabilitaPage() {
         </TabsContent>
         <TabsContent value="ricevute">
           <TabRicevute ricevute={ricevute} puoScrivere={puoScrivere} />
+        </TabsContent>
+        <TabsContent value="rendiconto">
+          <TabRendiconto dati={datiRendicontoPerAnno} puoScrivere={puoScrivere} />
         </TabsContent>
       </Tabs>
     </div>

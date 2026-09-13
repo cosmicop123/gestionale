@@ -12,7 +12,7 @@ muove nel codice, non ripete il **cosa**.
 
 ## Stato del progetto
 
-- **M0, M1, M2, M3, M4 e M5 completate.** M0: setup. M1: auth, ruoli,
+- **M0, M1, M2, M3, M4, M5 e M6 completate.** M0: setup. M1: auth, ruoli,
   anagrafica ente, anni sociali, utenti. M2: anagrafica persone con
   validazione CF completa, flusso domanda di ammissione → delibera → libro
   soci, import Excel/CSV, scheda socio, tessere. M3: conti, tipi di quota,
@@ -31,12 +31,50 @@ muove nel codice, non ripete il **cosa**.
   obbligatori, revisione interna delle preiscrizioni pubbliche prima della
   conferma. **Da qui il sistema è utilizzabile in produzione anche per la
   raccolta di iscrizioni online**, come richiesto dal piano a milestone
-  (§10).
-- Prossima milestone: **M6 — Rendiconto per cassa**, report contabili
-  (Mod. D, natura fiscale).
-- Le milestone si susseguono una alla volta con conferma dell'utente a fine
-  di ognuna (si veda il piano di lavoro nella specifica, §10). Non scrivere
-  codice per più di una milestone alla volta.
+  (§10). M6: rendiconto per cassa (Mod. D / Mod. E forma aggregata)
+  generato dai movimenti di prima nota per anno sociale, con mappatura
+  categoria→sezione parametrica ed editabile, PDF scaricabile, report
+  sulle entrate potenzialmente commerciali (§7.3).
+- **Da qui in avanti l'utente ha chiesto di procedere in automatico su
+  tutte le milestone rimanenti (M7-M10), senza fermarsi per conferma dopo
+  ognuna** — istruzione esplicita che sostituisce, per il resto del
+  progetto, il fermo-dopo-milestone previsto da §10.
+- Prossima milestone: **M7 — Eventi**, pratiche SIAE, sponsor, raccolte
+  fondi.
+
+### Note di continuità per M6 (da tenere presenti in M7+)
+
+- **Nessuna migrazione Prisma necessaria**: `MovimentoPrimaNota.categoriaRendiconto`
+  esisteva già da M3 con un commento che rimandava esplicitamente a questa
+  milestone per la mappatura sullo schema Mod. D.
+- **La mappatura categoria→sezione (A-E) è un Parametro, non una costante
+  hardcoded** (`contabilita.mappatura_categorie_rendiconto`, JSON): il
+  default proposto (`MAPPATURA_RENDICONTO_DEFAULT` in `src/lib/parametri.ts`,
+  duplicato nel seed) è un punto di partenza ragionevole, non una
+  determinazione fiscale — editabile da Contabilità → Rendiconto (§12,
+  "non inventare regole fiscali, esporre solo parametri"). La struttura a 5
+  sezioni A-E e la soglia di 60.000 € per la forma aggregata sono state
+  verificate con una ricerca mirata (DM 5/3/2020 Mod. D, DM 18/2/2026
+  Mod. E) prima di implementare, stesso principio già seguito per il
+  codice fiscale in M2: mai inventare uno schema normativo a memoria senza
+  verifica.
+- **`calcolaRendiconto`** (`src/lib/rendiconto/calcola.ts`) è una funzione
+  pura: somma i movimenti per sezione secondo la mappatura, e se una
+  categoria non ha mappatura la somma comunque nei totali generali ma la
+  segnala a parte (`categorieNonMappate`) invece di scartarla o forzarla in
+  una sezione a caso — una categoria nuova non deve mai alterare
+  silenziosamente i totali.
+- **PDF on-demand, non persistito** (stesso pattern di tessera/registro
+  presenze): il rendiconto riflette lo stato corrente dei movimenti; non è
+  un documento append-only-critico di per sé (l'eventuale verbale di
+  approvazione dell'assemblea sarà competenza di M8 "Libri sociali").
+- **`ottieniDatiRendiconto`** (`src/lib/rendiconto/dati.ts`) centralizza le
+  query condivise tra la pagina di consultazione e la generazione del PDF:
+  riusarlo per qualunque futuro export dello stesso rendiconto invece di
+  duplicare le query.
+- **Report natura fiscale (§7.3)** nella tab Rendiconto: espone solo il
+  totale dei movimenti già segnati `ricavoCommerciale` al momento della
+  registrazione (M3), non introduce alcuna nuova qualificazione fiscale.
 
 ### Note di continuità per M5 (da tenere presenti in M6+)
 
@@ -218,13 +256,15 @@ muove nel codice, non ripete il **cosa**.
 - **Test e2e multipli condividono un solo database** (`e2e-test.db`,
   ricreato una volta sola all'inizio della run da `global-setup.ts`, non
   per singolo file): i file di test sono numerati (`01-login`, `02-soci`,
-  `03-contabilita`, `04-corsi`, `05-iscrizione-pubblica`) apposta, perché
-  Playwright con `workers: 1` li esegue in ordine alfabetico e alcuni
-  assumono lo stato lasciato dai precedenti (es. `02-soci` richiede che
-  l'onboarding sia già stato completato da `01-login`, `04-corsi` riusa la
-  persona "Giulia Verdi" creata e ammessa a socia in `03-contabilita`, e
-  `05-iscrizione-pubblica` pubblica la propria informativa privacy e crea
-  il proprio corso perché nessun test precedente lo fa).
+  `03-contabilita`, `04-corsi`, `05-iscrizione-pubblica`, `06-rendiconto`)
+  apposta, perché Playwright con `workers: 1` li esegue in ordine
+  alfabetico e alcuni assumono lo stato lasciato dai precedenti (es.
+  `02-soci` richiede che l'onboarding sia già stato completato da
+  `01-login`, `04-corsi` riusa la persona "Giulia Verdi" creata e ammessa a
+  socia in `03-contabilita`, `05-iscrizione-pubblica` pubblica la propria
+  informativa privacy e crea il proprio corso, e `06-rendiconto` verifica
+  che il saldo di cassa e il movimento categorizzato "quote_associative"
+  di `03-contabilita` compaiano correttamente nel rendiconto).
   Se si aggiungono nuovi file di test E2E che dipendono da uno stato
   pregresso, dar loro un prefisso numerico coerente con l'ordine di
   dipendenza invece di dare per scontato l'ordine alfabetico naturale dei

@@ -4,16 +4,17 @@ Gestionale web self-hosted per la gestione di soci, tesseramenti,
 contabilità per cassa, corsi, eventi, libri sociali, documenti e
 adempimenti GDPR di un'associazione culturale italiana.
 
-> **Stato attuale: milestone M5 completata.** Login, ruoli, anagrafica
+> **Stato attuale: milestone M6 completata.** Login, ruoli, anagrafica
 > ente, soci con validazione del codice fiscale, libro soci, tessere,
 > conti, quote, pagamenti con ricevute e prima nota automatiche, corsi con
 > calendario lezioni, iscrizioni con lista d'attesa, appello (anche via QR),
 > registro presenze e attestati di frequenza, pagina pubblica di iscrizione
-> ai corsi con consensi privacy granulari e gestione dei minori sono
-> attivi: **il gestionale è utilizzabile in produzione per soci, cassa,
-> corsi e iscrizioni online.** Rendiconto, eventi, libri sociali e
-> comunicazioni arrivano dalle milestone successive. Vedi `CLAUDE.md` per
-> lo stato di dettaglio.
+> ai corsi con consensi privacy granulari e gestione dei minori, rendiconto
+> per cassa (Mod. D/Mod. E) con mappatura editabile sono attivi: **il
+> gestionale è utilizzabile in produzione per soci, cassa, corsi,
+> iscrizioni online e rendiconto.** Eventi, libri sociali e comunicazioni
+> arrivano dalle milestone successive (in corso, senza fermo per conferma
+> tra una e l'altra). Vedi `CLAUDE.md` per lo stato di dettaglio.
 
 ## Requisiti
 

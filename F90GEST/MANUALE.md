@@ -153,6 +153,25 @@ restare bloccata. Nessuna iscrizione pubblica diventa mai "Confermata" in
 automatico, nemmeno se ci sono posti liberi: la conferma resta sempre una
 decisione della segreteria.
 
+## Rendiconto per cassa
+
+Da **Contabilità → Rendiconto** puoi consultare, per ciascun anno sociale,
+il rendiconto per cassa nello schema previsto per gli enti del terzo
+settore (Mod. D, o Mod. E in forma aggregata per chi ha entrate fino a
+60.000 €): entrate e uscite divise nelle 5 sezioni A-E, avanzo/disavanzo
+di esercizio, saldo di cassa e banca a inizio e fine periodo.
+
+- **Mappatura categorie → sezioni**: decide tu (o il tuo consulente) a
+  quale sezione appartiene ciascuna categoria di prima nota; il
+  gestionale propone un default ragionevole ma **non decide al posto
+  vostro** — verificatela prima di approvare il rendiconto.
+- **Forma aggregata**: attivabile/disattivabile con un clic; mostra solo i
+  totali per sezione invece del dettaglio per categoria.
+- **Scarica il PDF** del rendiconto in qualsiasi momento.
+- La sezione **"Entrate potenzialmente commerciali"** riprende i movimenti
+  già segnalati come tali al momento della registrazione: è solo
+  un'informazione di sintesi, non una qualificazione fiscale automatica.
+
 ## Anni sociali
 
 Da **Amministrazione → Anni sociali** puoi creare un nuovo anno sociale
@@ -164,7 +183,6 @@ reversibile da qui — usala solo quando l'anno è davvero terminato.
 
 | Milestone | Cosa diventa utilizzabile |
 |---|---|
-| M6 | Rendiconto per cassa, report contabili |
 | M7 | Eventi, pratiche SIAE, sponsor, raccolte fondi |
 | M8 | Verbali, protocollo, archivio documenti |
 | M9 | Invio email e comunicazioni |

@@ -144,3 +144,25 @@ export type DatiMovimentoManuale = z.infer<typeof schemaMovimentoManuale>;
 export const schemaStorno = z.object({
   motivoStorno: z.string().min(1, "Inserire il motivo dello storno."),
 });
+
+// Le 5 sezioni del rendiconto per cassa (Mod. D, DM 5/3/2020, art. 13 —
+// confermate anche nel Mod. E "forma aggregata", DM 18/2/2026): ogni voce di
+// entrata/uscita va inquadrata in una di queste, mai un'invenzione di questo
+// software (§12). Quale sezione attribuire a ciascuna categoria di prima
+// nota (`Parametro.contabilita.mappatura_categorie_rendiconto`) resta però
+// una scelta dell'associazione: qui si propone solo un default ragionevole,
+// modificabile da Contabilità → Rendiconto.
+export const SEZIONI_MODELLO_D = ["A", "B", "C", "D", "E"] as const;
+export const ETICHETTE_SEZIONI_MODELLO_D: Record<(typeof SEZIONI_MODELLO_D)[number], string> = {
+  A: "A) Attività di interesse generale",
+  B: "B) Attività diverse",
+  C: "C) Attività di raccolta fondi",
+  D: "D) Attività finanziarie e patrimoniali",
+  E: "E) Attività di supporto generale",
+};
+
+export const schemaMappaturaRendiconto = z.record(
+  z.string(),
+  z.enum(SEZIONI_MODELLO_D, { message: "Selezionare una sezione valida." })
+);
+export type DatiMappaturaRendiconto = z.infer<typeof schemaMappaturaRendiconto>;

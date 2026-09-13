@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Script Node.js standalone (eseguiti direttamente da un runtime Node
+    // portatile senza transpilazione, es. dall'installer Windows): CommonJS
+    // deliberato, fuori dal codice TypeScript/ESM dell'app.
+    "scripts/**",
   ]),
 ]);
 

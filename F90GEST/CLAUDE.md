@@ -63,6 +63,89 @@ muove nel codice, non ripete il **cosa**.
   del piano originale. Eventuale lavoro successivo (richieste dell'utente,
   bug, rifiniture) prosegue da qui, non c'è una "M11" implicita.
 
+### Nota fuori milestone: installer Windows (Setup.exe)
+
+Su richiesta dell'utente, dopo il generatore di sito pubblico: un
+installer Windows scaricabile, per un'associazione che vuole far girare
+F90GEST su un PC Windows del proprio ufficio invece che su un server/VPS
+con Docker.
+
+- **Vincolo di partenza dichiarato all'utente**: questo ambiente di
+  sviluppo è Linux, senza un Windows reale su cui compilare/testare i
+  moduli nativi (`better-sqlite3`, `argon2`) per quella piattaforma.
+  Soluzione: un installer "leggero" che al momento dell'installazione
+  (sul PC Windows di destinazione) esegue `npm ci` per davvero — così è
+  npm stesso, in esecuzione su Windows, a scaricare i binari nativi
+  precompilati per quella piattaforma (cosa che avviene automaticamente
+  per la stragrande maggioranza dei pacchetti nativi comuni). Non è stato
+  necessario cross-compilare nulla.
+- **NSIS (`makensis`), non Electron**: il compilatore NSIS (pacchetto
+  apt `nsis`) gira nativamente su Linux e produce un vero eseguibile
+  Windows (verificato con `file`: PE32, Nullsoft Installer). Scelto
+  rispetto a un pacchetto Electron perché non richiede di impacchettare
+  un intero runtime Chromium/V8 aggiuntivo (l'app resta quello che è, un
+  sito servito in locale, aperto nel browser di sistema) — installer
+  molto più piccolo (~37 MB contro le centinaia di MB tipiche di
+  Electron) e nessun problema di moduli nativi da ricompilare per un
+  ambiente Electron separato da Node.js.
+- **`installers/windows/build.sh`** ricostruisce l'installer da zero: scarica
+  lo zip ufficiale del runtime Node.js per Windows da nodejs.org (un
+  binario precompilato, non richiede compilazione — verificato che
+  nodejs.org sia raggiungibile dal proxy di rete di questo ambiente),
+  prende uno snapshot pulito del codice con `git archive HEAD` (rispetta
+  `.gitignore`: mai `node_modules`/`.next`/db/storage locali nell'installer),
+  copia gli script di avvio, e compila con `makensis`. Riproducibile da
+  chiunque abbia questo ambiente (o un Linux con `nsis` installato via
+  apt), non serve rigenerare a mano nulla ad ogni modifica del codice.
+  L'eseguibile risultante (`installers/windows/F90GEST-Setup-Windows.exe`,
+  ~37 MB) e la cartella di staging (`.staging/`) sono in `.gitignore`:
+  sono artefatti generati, non vanno versionati.
+- **Nessun requisito di amministratore**: `RequestExecutionLevel user` +
+  `InstallDir "$LOCALAPPDATA\F90GEST"` — tutto (runtime Node, codice,
+  database, allegati) vive sotto il profilo dell'utente Windows corrente,
+  nessun UAC, adatto a un PC condiviso di un'associazione dove nessuno ha
+  necessariamente i diritti di amministratore.
+- **Percorsi ASSOLUTI in `.env` generato dall'installer**
+  (`scripts/genera-env.js`, eseguito da NSIS durante l'installazione),
+  MAI relativi: stesso problema già documentato nelle note di
+  continuità di M10 per Docker (`DATABASE_URL`/`STORAGE_DIR` relativi
+  vengono risolti dalla CLI Prisma rispetto alla cartella di
+  `prisma/schema.prisma`, ma dall'app stessa — driver adapter
+  better-sqlite3, `src/lib/prisma.ts` — rispetto a `process.cwd()`; due
+  basi diverse che con un percorso relativo punterebbero silenziosamente
+  a due file diversi). `genera-env.js` costruisce i percorsi assoluti con
+  `path.join(__dirname, ...)`, quindi resta corretto qualunque sia la
+  cartella di installazione effettiva.
+- **Sequenza di install identica a quella già in produzione via Docker**:
+  `npm ci --legacy-peer-deps` → `prisma migrate deploy` → `prisma db seed`
+  → `npm run build`, la stessa di `Dockerfile`/`docker-entrypoint.sh` —
+  scelta deliberata per riusare un percorso già testato in quel contesto,
+  invece di inventarne uno nuovo per Windows.
+- **Avvio/arresto tramite `.bat`, non un vero servizio Windows**: scelta
+  di scope per la prima versione (nessun avvio automatico al boot). "Avvia
+  F90GEST.bat" controlla se la porta 3000 risponde già (evita doppi avvii),
+  altrimenti lancia `npm run start` in una finestra minimizzata e apre il
+  browser non appena il server risponde. "Ferma F90GEST.bat" cerca il
+  processo in ascolto sulla porta 3000 via `netstat` (con
+  `findstr /R /C:":3000 "`, spazio finale incluso apposta: senza,
+  `findstr :3000` avrebbe intercettato per errore anche una porta come
+  30001 per confronto di sottostringa) e lo termina.
+- **Limiti dichiarati esplicitamente all'utente** (in
+  `LEGGIMI-INSTALLAZIONE.txt`, incluso nella consegna): (1) l'installer
+  non è firmato digitalmente, quindi Windows SmartScreen mostrerà quasi
+  certamente un avviso "Windows ha protetto il PC" — normale per software
+  non firmato, non un'indicazione di problema; (2) l'installazione
+  richiede una connessione internet attiva (scarica le dipendenze npm);
+  (3) **non è mai stato eseguito su un Windows reale**, perché questo
+  ambiente di sviluppo non lo consente — è stato chiesto esplicitamente
+  all'utente di riportare eventuali errori (con il codice numerico
+  mostrato da NSIS) per poter correggere ed eventualmente ricompilare.
+- **Disinstallazione con scelta esplicita sui dati**: l'uninstaller
+  (auto-generato da NSIS) chiede se eliminare anche database e allegati o
+  conservarli per un'eventuale reinstallazione futura — stesso principio
+  di conferma per le azioni distruttive già seguito nel resto dell'app
+  (es. il ripristino da backup di M10).
+
 ### Nota fuori milestone: generatore di sito pubblico con template
 
 Su richiesta esplicita dell'utente (non parte del piano a milestone), dopo

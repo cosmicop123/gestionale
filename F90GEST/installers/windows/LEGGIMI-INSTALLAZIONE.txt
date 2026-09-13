@@ -1,0 +1,83 @@
+F90GEST — Installer per Windows (versione di prova)
+=====================================================
+
+COSA FA QUESTO INSTALLER
+-------------------------
+Installa F90GEST interamente nel tuo profilo utente (non serve essere
+amministratore del PC), in:
+    %LOCALAPPDATA%\F90GEST
+    (di solito: C:\Utenti\<tuonome>\AppData\Local\F90GEST)
+
+Durante l'installazione:
+1. Copia un runtime Node.js "portatile" (non tocca eventuali installazioni
+   di Node.js già presenti sul PC).
+2. Copia il codice dell'applicazione.
+3. Genera un file di configurazione con una password di sicurezza casuale.
+4. Scarica e installa le librerie necessarie da internet (richiede
+   connessione attiva, alcuni minuti).
+5. Prepara il database e i dati minimi (associazione, utente
+   amministratore).
+6. Compila l'applicazione (altri 1-2 minuti).
+7. Crea un collegamento sul Desktop e nel menu Start, e avvia l'app.
+
+Alla fine si apre automaticamente il browser su http://localhost:3000
+con la pagina di login di F90GEST.
+
+REQUISITI
+---------
+- Windows 10 o 11, 64 bit.
+- Connessione a internet ATTIVA durante l'installazione (non serve più
+  dopo, l'app gira tutta in locale).
+- Qualche centinaio di MB liberi sul disco.
+- Porta 3000 libera sul PC (nessun altro programma in ascolto su quella
+  porta).
+
+AVVISO IMPORTANTE — SCHERMATA BLU DI WINDOWS ("SmartScreen")
+-------------------------------------------------------------
+Questo installer NON è firmato digitalmente con un certificato
+riconosciuto (i certificati di firma del codice sono a pagamento e
+richiedono una procedura di verifica aziendale, non ancora fatta). È
+quindi PROBABILE che Windows mostri un avviso simile a:
+
+    "Windows ha protetto il PC" / "Impossibile verificare l'autore"
+
+Questo è normale per software non ancora firmato, non significa che il
+file sia pericoloso. Per procedere:
+    1. Clicca su "Ulteriori informazioni" (o "More info").
+    2. Clicca su "Esegui comunque" (o "Run anyway").
+
+Se anche l'antivirus segnala qualcosa, è quasi certamente un "falso
+positivo" dovuto al fatto che l'installer scarica ed esegue altri
+programmi (Node.js, npm) durante l'installazione — un comportamento
+insolito per un installer "normale", ma legittimo in questo caso.
+
+DOPO L'INSTALLAZIONE
+---------------------
+- Per riaprire F90GEST in futuro: doppio clic sull'icona "F90GEST" sul
+  Desktop (oppure dal menu Start).
+- Per fermarlo: menu Start → F90GEST → "Ferma F90GEST".
+- I tuoi dati (database, ricevute, documenti caricati) restano dentro:
+    %LOCALAPPDATA%\F90GEST\app\prisma\data
+    %LOCALAPPDATA%\F90GEST\app\storage
+  Fai backup regolari di queste due cartelle (o usa la funzione di
+  backup integrata in Amministrazione → Backup e ripristino, una volta
+  dentro l'app).
+
+SE QUALCOSA NON FUNZIONA
+--------------------------
+Questo installer non è mai stato provato su un PC Windows reale (è stato
+preparato e compilato da un ambiente Linux): è probabile che qualcosa
+richieda una correzione al primo tentativo. Se l'installazione si
+interrompe con un errore, o l'app non si apre:
+
+1. Annota ESATTAMENTE il messaggio di errore mostrato (numero di codice
+   compreso).
+2. Se l'errore riguarda l'installazione delle dipendenze o la
+   compilazione, cerca il file di log più recente qui:
+       %LOCALAPPDATA%\F90GEST\app\npm-debug.log
+   (se presente).
+3. Riportami il messaggio di errore così posso correggere l'installer e
+   generartene una nuova versione.
+
+Non è indispensabile essere sviluppatori per aiutarmi a sistemarlo: basta
+copiare e incollare quello che appare a schermo.

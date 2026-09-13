@@ -50,3 +50,7 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 /coverage/
+
+# installer Windows: artefatti generati (non versionare binari/runtime scaricati)
+/installers/windows/.staging/
+/installers/windows/*.exe

@@ -75,11 +75,35 @@ docker compose up -d --build
 Le migrazioni del database si applicano automaticamente all'avvio del
 container aggiornato.
 
+## Installer Windows
+
+Per un'associazione che preferisce far girare F90GEST su un PC Windows
+dell'ufficio invece che su un server con Docker, `installers/windows/`
+contiene un installer (`F90GEST-Setup-Windows.exe`, generato da
+`build.sh`, non versionato in git) che:
+
+- installa tutto (runtime Node.js incluso) sotto il profilo utente
+  (`%LOCALAPPDATA%\F90GEST`), senza bisogno di diritti di amministratore;
+- durante l'installazione esegue `npm ci`, prepara il database e compila
+  l'app (richiede una connessione a internet attiva);
+- crea un collegamento sul Desktop per avviare/aprire l'app nel browser
+  predefinito su `http://localhost:3000`.
+
+Per ricompilarlo dopo una modifica al codice: `cd installers/windows &&
+./build.sh` (richiede `makensis`, pacchetto apt `nsis`). Vedi
+`installers/windows/LEGGIMI-INSTALLAZIONE.txt` per le istruzioni da dare
+a chi lo installa, incluso l'avviso su SmartScreen (l'installer non è
+firmato digitalmente).
+
 ## Backup e ripristino
 
-> La procedura di backup/restore guidato da interfaccia (dump DB + allegati
-> in un unico archivio ZIP scaricabile con un click) è prevista dalla
-> milestone M10. Nel frattempo, backup manuale dei volumi Docker:
+Da Amministrazione → Backup e ripristino (dentro l'app) puoi scaricare con
+un click un unico archivio ZIP con database e allegati, e ripristinarlo in
+caso di necessità (con conferma esplicita e backup di sicurezza automatico
+dello stato precedente). È il modo consigliato, indipendente da Docker.
+
+In alternativa, backup manuale dei volumi Docker (utile ad es. per uno
+script di backup automatico schedulato sul server):
 
 ```bash
 # Backup

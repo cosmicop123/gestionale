@@ -14,6 +14,7 @@ import {
   DomandaInValutazioneCard,
 } from "@/components/socio/domanda-ammissione-section";
 import { TesseramentoSection } from "@/components/socio/tesseramento-section";
+import { QuoteSection } from "@/components/socio/quote-section";
 
 function formattaData(data: Date | null): string {
   return data ? new Intl.DateTimeFormat("it-IT").format(data) : "—";
@@ -56,6 +57,22 @@ export default async function SchedaSocioPage({
         orderBy: { dataInizio: "desc" },
       })
     : [];
+
+  const annoSocialeCorrente = await prisma.annoSociale.findFirst({
+    where: { chiuso: false },
+    orderBy: { dataInizio: "desc" },
+  });
+  const [quote, tipiQuota, conti] = await Promise.all([
+    prisma.quota.findMany({
+      where: { personaId: persona.id, deletedAt: null },
+      include: { tipoQuota: true, pagamenti: { include: { ricevuta: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
+    annoSocialeCorrente
+      ? prisma.tipoQuota.findMany({ where: { annoSocialeId: annoSocialeCorrente.id, deletedAt: null } })
+      : Promise.resolve([]),
+    prisma.conto.findMany({ where: { deletedAt: null } }),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -182,11 +199,20 @@ export default async function SchedaSocioPage({
 
       <Card>
         <CardHeader>
+          <CardTitle className="text-base">Quote e pagamenti</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <QuoteSection personaId={persona.id} quote={quote} tipiQuota={tipiQuota} conti={conti} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-base">Prossimamente</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Quote e pagamenti (M3), corsi frequentati (M4), consensi privacy (M5) e comunicazioni
-          ricevute (M9) compariranno qui non appena i rispettivi moduli saranno disponibili.
+          Corsi frequentati (M4), consensi privacy (M5) e comunicazioni ricevute (M9)
+          compariranno qui non appena i rispettivi moduli saranno disponibili.
         </CardContent>
       </Card>
     </div>

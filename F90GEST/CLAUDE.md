@@ -12,16 +12,77 @@ muove nel codice, non ripete il **cosa**.
 
 ## Stato del progetto
 
-- **M0, M1 e M2 completate.** M0: setup. M1: auth, ruoli, anagrafica ente,
-  anni sociali, utenti. M2: anagrafica persone con validazione CF completa,
-  flusso domanda di ammissione → delibera → libro soci, import Excel/CSV,
-  scheda socio, tessere con QR in PDF formato tesserino.
-- Prossima milestone: **M3 — Quote, pagamenti, ricevute, prima nota** con
-  automatismi e transazioni. Dopo questa milestone il sistema deve essere
-  già utilizzabile in produzione per soci e cassa (§10 della specifica).
+- **M0, M1, M2 e M3 completate.** M0: setup. M1: auth, ruoli, anagrafica
+  ente, anni sociali, utenti. M2: anagrafica persone con validazione CF
+  completa, flusso domanda di ammissione → delibera → libro soci, import
+  Excel/CSV, scheda socio, tessere. M3: conti, tipi di quota, quote,
+  pagamenti con generazione automatica di movimento e ricevuta, prima
+  nota con storni, riporto automatico del saldo alla chiusura dell'anno
+  sociale. **Da qui il sistema è utilizzabile in produzione per soci e
+  cassa**, come richiesto dal piano a milestone (§10).
+- Prossima milestone: **M4 — Corsi**: calendario, iscrizioni interne,
+  appello mobile, registro PDF, attestati.
 - Le milestone si susseguono una alla volta con conferma dell'utente a fine
   di ognuna (si veda il piano di lavoro nella specifica, §10). Non scrivere
   codice per più di una milestone alla volta.
+
+### Note di continuità per M3 (da tenere presenti in M4+)
+
+- **Transazione finanziaria completa** in `src/lib/pagamento/actions.ts`
+  (`registraPagamentoQuota`): Pagamento + MovimentoPrimaNota + Ricevuta +
+  aggiornamento stato Quota + eventuale transizione SocioStato
+  `in_attesa`→`attivo`, tutto in una `prisma.$transaction`. È il pattern di
+  riferimento per qualunque futura registrazione finanziaria (es. incassi
+  di iscrizioni a corsi/eventi in M4/M7): replicarlo, non reinventarlo.
+- **PDF delle ricevute generati una volta e persistiti** (a differenza
+  della tessera in M2, rigenerata on-demand): `src/lib/ricevuta/genera.ts`
+  separa la creazione della riga DB (dentro la transazione, con
+  numerazione atomica via `prossimoNumero`) dalla generazione del file
+  (dopo il commit, per non tenere una scrittura su disco dentro la
+  transazione DB). Il file finisce in `STORAGE_DIR` via `src/lib/storage.ts`
+  con una riga `Allegato` collegata. Stesso pattern da riusare per ogni
+  futuro documento append-only-critico (es. attestati in M4, se si decide
+  di persisterli anziché rigenerarli).
+- **Bollo e categorie di rendiconto sono parametriche**, non hardcoded:
+  `Parametro.contabilita.nature_fiscali_soggette_a_bollo` (JSON) decide per
+  quali nature fiscali scatta il bollo oltre soglia — il software non
+  decide da solo quali nature lo richiedano (§12, "non inventare regole
+  fiscali"). Le categorie di prima nota (`src/lib/validazioni/contabilita.ts`,
+  `CATEGORIE_RENDICONTO_*`) sono una tassonomia **provvisoria**: la mappatura
+  puntuale allo schema del Mod. D (DM 5/3/2020) è compito di M6
+  ("Rendiconto per cassa") — non anticiparla ora, i movimenti già
+  registrati restano compatibili perché il campo è una stringa libera.
+- **Riporto automatico del saldo** (§7.2): `creaAnnoSociale` copia il
+  saldo finale dell'anno precedente chiuso come saldo iniziale del nuovo
+  anno per ogni conto; `chiudiAnnoSociale` calcola e blocca il saldo
+  finale di ogni conto sommando i movimenti compresi tra `dataInizio` e
+  `dataFine` dell'anno (non esiste un campo `annoSocialeId` su
+  `MovimentoPrimaNota`: l'attribuzione è sempre per intervallo di date,
+  scelta di design da mantenere coerente nelle prossime milestone).
+- **Upload di file dentro una server action**: `registraMovimentoManuale`
+  accetta `FormData` invece di un oggetto tipizzato da react-hook-form,
+  perché è l'unico modo per inviare testo e file nello stesso submit. Per
+  evitare un update su una riga append-only, l'id del movimento viene
+  generato lato applicazione (`randomUUID()`) *prima* di salvare
+  l'eventuale allegato, così l'`Allegato` e il `MovimentoPrimaNota` si
+  creano entrambi una sola volta, in ordine, mai con un update successivo.
+  Riusare lo stesso schema per qualunque futuro upload legato a una riga
+  append-only.
+- **Turbopack e filesystem dinamico**: l'accesso a `STORAGE_DIR` (variabile
+  d'ambiente) in `src/lib/storage.ts` va marcato con
+  `/* turbopackIgnore: true */` sul `join(...)`, altrimenti la build
+  traccia ed impacchetta l'intero progetto nell'output del server
+  (warning, non errore, ma da evitare).
+- **Test e2e multipli condividono un solo database** (`e2e-test.db`,
+  ricreato una volta sola all'inizio della run da `global-setup.ts`, non
+  per singolo file): i file di test sono numerati (`01-login`, `02-soci`,
+  `03-contabilita`) apposta, perché Playwright con `workers: 1` li esegue
+  in ordine alfabetico e alcuni assumono lo stato lasciato dai precedenti
+  (es. `02-soci` richiede che l'onboarding sia già stato completato da
+  `01-login`, e che il socio creato sia il primo del libro soci). Se si
+  aggiungono nuovi file di test E2E che dipendono da uno stato pregresso,
+  dar loro un prefisso numerico coerente con l'ordine di dipendenza invece
+  di dare per scontato l'ordine alfabetico naturale dei nomi.
 
 ### Note di continuità per M2 (da tenere presenti in M3+)
 

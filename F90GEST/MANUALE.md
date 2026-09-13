@@ -58,6 +58,35 @@ Da **Soci e tesseramenti** puoi:
   file, abbina le colonne ai campi del gestionale, controlla l'anteprima
   (le righe con errori vengono segnalate e non importate) e conferma.
 
+## Contabilità
+
+Da **Contabilità** (visibile ad amministratore e tesoriere in scrittura, a
+segreteria e sola lettura in sola consultazione):
+
+- **Conti**: crea la cassa contanti e gli eventuali conti correnti,
+  indicando il saldo iniziale la prima volta. Il saldo corrente si
+  aggiorna da solo man mano che registri incassi e uscite.
+- **Tipi di quota**: definisci gli importi delle quote per l'anno sociale
+  in corso (es. "Quota associativa 2026/2027", 30 €).
+- **Quote**: dalla scheda di un socio puoi generare una quota singola;
+  da qui puoi anche fare un **rinnovo massivo** selezionando più soci in
+  una volta sola.
+- **Registrare un incasso**: dalla scheda del socio, sulla quota da
+  pagare, premi "Registra pagamento". Il gestionale crea automaticamente
+  il movimento di prima nota e la ricevuta numerata — **non serve mai
+  inserirli a mano separatamente**. Se il socio era "in attesa" (quota non
+  ancora pagata), passa automaticamente ad "attivo".
+- **Ricevute**: scaricabili in PDF in qualsiasi momento; se emessa per
+  errore, si annulla (mai cancellata) indicando il motivo.
+- **Prima nota**: puoi registrare anche movimenti non legati a una quota
+  (es. una spesa per materiali). Per le uscite oltre una certa soglia è
+  obbligatorio allegare uno scontrino/fattura oppure spiegare perché non
+  c'è. Un movimento sbagliato si **storna** (si annulla con un movimento
+  di segno opposto), non si cancella mai.
+- **Chiusura dell'anno sociale**: quando chiudi un anno da Amministrazione,
+  il gestionale calcola da solo il saldo finale di ogni conto; il nuovo
+  anno sociale parte automaticamente con quel saldo come saldo iniziale.
+
 ## Anni sociali
 
 Da **Amministrazione → Anni sociali** puoi creare un nuovo anno sociale
@@ -69,7 +98,6 @@ reversibile da qui — usala solo quando l'anno è davvero terminato.
 
 | Milestone | Cosa diventa utilizzabile |
 |---|---|
-| M3 | Quote, ricevute, prima nota — **da qui il gestionale è già utilizzabile per soci e cassa** |
 | M4 | Corsi, appello, attestati |
 | M5 | Iscrizione online ai corsi, consensi privacy, gestione minori |
 | M6 | Rendiconto per cassa, report contabili |

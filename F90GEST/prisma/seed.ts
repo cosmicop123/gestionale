@@ -89,6 +89,12 @@ async function main() {
       descrizione: "Se true, il rendiconto per cassa è redatto in forma aggregata (enti con entrate sotto i 60.000 €).",
     },
     {
+      chiave: "contabilita.nature_fiscali_soggette_a_bollo",
+      valore: '["corrispettivo_specifico","attivita_commerciale"]',
+      descrizione:
+        "Elenco (JSON) delle nature fiscali per cui si applica il bollo oltre soglia. Proposta di default: verificare con il proprio consulente fiscale.",
+    },
+    {
       chiave: "corsi.percentuale_minima_presenza_default",
       valore: "70",
       descrizione: "Percentuale minima di presenza di default per l'emissione dell'attestato di un nuovo corso.",

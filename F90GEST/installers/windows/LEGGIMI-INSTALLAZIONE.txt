@@ -9,9 +9,10 @@ amministratore del PC), in:
     (di solito: C:\Utenti\<tuonome>\AppData\Local\F90GEST)
 
 Durante l'installazione:
-1. Copia un runtime Node.js "portatile" (non tocca eventuali installazioni
-   di Node.js già presenti sul PC).
-2. Copia il codice dell'applicazione.
+1. Copia il codice dell'applicazione.
+2. Scarica un runtime Node.js "portatile" direttamente dal sito ufficiale
+   nodejs.org (non tocca eventuali installazioni di Node.js già presenti
+   sul PC: resta tutto dentro la cartella di F90GEST).
 3. Genera un file di configurazione con una password di sicurezza casuale.
 4. Scarica e installa le librerie necessarie da internet (richiede
    connessione attiva, alcuni minuti).
@@ -19,6 +20,10 @@ Durante l'installazione:
    amministratore).
 6. Compila l'applicazione (altri 1-2 minuti).
 7. Crea un collegamento sul Desktop e nel menu Start, e avvia l'app.
+
+Questo installer è volutamente piccolo (circa 600 KB): scarica tutto il
+resto (runtime Node.js incluso, circa 35 MB) al momento dell'installazione,
+invece di portarselo dietro già pronto.
 
 Alla fine si apre automaticamente il browser su http://localhost:3000
 con la pagina di login di F90GEST.
@@ -72,11 +77,15 @@ interrompe con un errore, o l'app non si apre:
 
 1. Annota ESATTAMENTE il messaggio di errore mostrato (numero di codice
    compreso).
-2. Se l'errore riguarda l'installazione delle dipendenze o la
+2. Se l'errore riguarda il download del runtime Node.js, verifica che il
+   sito nodejs.org non sia bloccato da un firewall/antivirus aziendale (in
+   una rete di un'associazione è raro, ma capita su reti con filtri
+   restrittivi).
+3. Se l'errore riguarda l'installazione delle dipendenze o la
    compilazione, cerca il file di log più recente qui:
        %LOCALAPPDATA%\F90GEST\app\npm-debug.log
    (se presente).
-3. Riportami il messaggio di errore così posso correggere l'installer e
+4. Riportami il messaggio di errore così posso correggere l'installer e
    generartene una nuova versione.
 
 Non è indispensabile essere sviluppatori per aiutarmi a sistemarlo: basta

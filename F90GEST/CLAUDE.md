@@ -84,22 +84,39 @@ con Docker.
   Windows (verificato con `file`: PE32, Nullsoft Installer). Scelto
   rispetto a un pacchetto Electron perché non richiede di impacchettare
   un intero runtime Chromium/V8 aggiuntivo (l'app resta quello che è, un
-  sito servito in locale, aperto nel browser di sistema) — installer
-  molto più piccolo (~37 MB contro le centinaia di MB tipiche di
-  Electron) e nessun problema di moduli nativi da ricompilare per un
-  ambiente Electron separato da Node.js.
-- **`installers/windows/build.sh`** ricostruisce l'installer da zero: scarica
-  lo zip ufficiale del runtime Node.js per Windows da nodejs.org (un
-  binario precompilato, non richiede compilazione — verificato che
-  nodejs.org sia raggiungibile dal proxy di rete di questo ambiente),
-  prende uno snapshot pulito del codice con `git archive HEAD` (rispetta
+  sito servito in locale, aperto nel browser di sistema).
+- **Il runtime Node.js NON è incluso nell'installer**: prima versione
+  tentata lo includeva (~37 MB), ma il file superava il limite di
+  trasferimento usato per consegnarlo all'utente in questa sessione.
+  Soluzione: `installer.nsi` scarica lo zip ufficiale del runtime Node.js
+  per Windows direttamente da nodejs.org **al momento dell'installazione**
+  (sul PC di destinazione, via PowerShell/`Invoke-WebRequest`, con
+  `[Net.ServicePointManager]::SecurityProtocol = ...Tls12` forzato
+  esplicitamente — alcune installazioni di Windows 10 hanno ancora TLS 1.0
+  come default per .NET, che nodejs.org rifiuta silenziosamente), poi lo
+  estrae con `Expand-Archive` (nessun plugin NSIS di unzip necessario:
+  entrambi i cmdlet sono nativi su Windows 10/11, nessuna dipendenza
+  aggiuntiva). Risultato: l'installer scaricabile è sceso da ~37 MB a
+  **~600 KB** — scarica il resto (Node.js compreso) solo quando serve
+  davvero, sul PC di chi lo installa.
+- **`installers/windows/build.sh`** ricostruisce l'installer da zero: prende
+  uno snapshot pulito del codice con `git archive HEAD` (rispetta
   `.gitignore`: mai `node_modules`/`.next`/db/storage locali nell'installer),
   copia gli script di avvio, e compila con `makensis`. Riproducibile da
   chiunque abbia questo ambiente (o un Linux con `nsis` installato via
   apt), non serve rigenerare a mano nulla ad ogni modifica del codice.
-  L'eseguibile risultante (`installers/windows/F90GEST-Setup-Windows.exe`,
-  ~37 MB) e la cartella di staging (`.staging/`) sono in `.gitignore`:
-  sono artefatti generati, non vanno versionati.
+  L'eseguibile risultante (`installers/windows/F90GEST-Setup-Windows.exe`)
+  e la cartella di staging (`.staging/`) sono in `.gitignore`: sono
+  artefatti generati, non vanno versionati.
+- **Escaping delle stringhe NSIS per il comando PowerShell**: la riga di
+  download usa una stringa NSIS delimitata da apici singoli `'...'` che
+  contiene sia virgolette doppie letterali (per `-Command "..."`, non
+  serve escaparle: non sono il delimitatore) sia apici singoli letterali
+  (per le stringhe PowerShell `'URL'`/`'percorso'`, che vanno scritti
+  come `$\'` perché *sono* il carattere delimitatore della stringa NSIS
+  in corso) — un dettaglio facile da sbagliare in un senso o nell'altro,
+  annotato qui perché la sintassi corretta non è ovvia rileggendo il file
+  a distanza di tempo.
 - **Nessun requisito di amministratore**: `RequestExecutionLevel user` +
   `InstallDir "$LOCALAPPDATA\F90GEST"` — tutto (runtime Node, codice,
   database, allegati) vive sotto il profilo dell'utente Windows corrente,

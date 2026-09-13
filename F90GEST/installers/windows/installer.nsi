@@ -1,9 +1,12 @@
 ; Installer Windows per F90GEST.
-; Non richiede diritti di amministratore: installa tutto (runtime Node.js
-; portatile incluso, codice applicazione, database e allegati) sotto il
-; profilo dell'utente corrente (%LOCALAPPDATA%). Durante l'installazione
-; scarica le dipendenze npm e compila l'applicazione: richiede una
-; connessione a internet attiva e puo' richiedere alcuni minuti.
+; Non richiede diritti di amministratore: installa tutto (runtime Node.js,
+; codice applicazione, database e allegati) sotto il profilo dell'utente
+; corrente (%LOCALAPPDATA%). Il runtime Node.js NON e' incluso in questo
+; file (terrebbe l'installer sopra i limiti di trasferimento usati per
+; consegnarlo): viene scaricato dal sito ufficiale nodejs.org al momento
+; dell'installazione, con lo stesso meccanismo (PowerShell) gia' presente
+; su qualunque Windows 10/11. Richiede quindi una connessione a internet
+; attiva per l'intera durata dell'installazione (alcuni minuti).
 
 !include "LogicLib.nsh"
 !include "MUI2.nsh"
@@ -11,6 +14,8 @@
 !define APP_NAME "F90GEST"
 !define APP_VERSION "1.0.0"
 !define APP_PUBLISHER "Associazione Culturale Frequenze 90"
+!define NODE_VERSION "22.23.2"
+!define NODE_URL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-win-x64.zip"
 
 Name "${APP_NAME}"
 OutFile "F90GEST-Setup-Windows.exe"
@@ -40,10 +45,6 @@ Function .onInit
 FunctionEnd
 
 Section "Installa F90GEST" SEC01
-  DetailPrint "Copio il runtime Node.js..."
-  SetOutPath "$INSTDIR\node"
-  File /r "node\*.*"
-
   DetailPrint "Copio i file dell'applicazione..."
   SetOutPath "$INSTDIR\app"
   File /r "app\*.*"
@@ -51,6 +52,29 @@ Section "Installa F90GEST" SEC01
   SetOutPath "$INSTDIR"
   File "Avvia F90GEST.bat"
   File "Ferma F90GEST.bat"
+
+  DetailPrint "Scarico il runtime Node.js v${NODE_VERSION} da nodejs.org: puo' richiedere qualche minuto..."
+  ; [Net.ServicePointManager]::SecurityProtocol forza TLS 1.2: alcune
+  ; installazioni di Windows 10 hanno ancora TLS 1.0 come default per
+  ; .NET/PowerShell, che nodejs.org rifiuta, e il download fallirebbe in
+  ; silenzio senza questa riga.
+  nsExec::ExecToLog 'powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri $\'${NODE_URL}$\' -OutFile $\'$INSTDIR\node.zip$\'"'
+  Pop $0
+  ${If} $0 != 0
+    MessageBox MB_OK|MB_ICONSTOP "Download del runtime Node.js non riuscito (codice $0).$\r$\nVerifica la connessione a internet e riprova l'installazione."
+    Abort
+  ${EndIf}
+
+  DetailPrint "Estraggo il runtime Node.js..."
+  nsExec::ExecToLog 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Path $\'$INSTDIR\node.zip$\' -DestinationPath $\'$INSTDIR\node-tmp$\' -Force"'
+  Pop $0
+  ${If} $0 != 0
+    MessageBox MB_OK|MB_ICONSTOP "Estrazione del runtime Node.js non riuscita (codice $0)."
+    Abort
+  ${EndIf}
+  Rename "$INSTDIR\node-tmp\node-v${NODE_VERSION}-win-x64" "$INSTDIR\node"
+  RMDir "$INSTDIR\node-tmp"
+  Delete "$INSTDIR\node.zip"
 
   DetailPrint "Genero la configurazione iniziale (.env)..."
   nsExec::ExecToLog '"$INSTDIR\node\node.exe" "$INSTDIR\app\scripts\genera-env.js"'

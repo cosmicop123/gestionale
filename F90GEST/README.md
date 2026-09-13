@@ -82,10 +82,12 @@ dell'ufficio invece che su un server con Docker, `installers/windows/`
 contiene un installer (`F90GEST-Setup-Windows.exe`, generato da
 `build.sh`, non versionato in git) che:
 
-- installa tutto (runtime Node.js incluso) sotto il profilo utente
-  (`%LOCALAPPDATA%\F90GEST`), senza bisogno di diritti di amministratore;
+- installa tutto sotto il profilo utente (`%LOCALAPPDATA%\F90GEST`), senza
+  bisogno di diritti di amministratore (l'installer stesso pesa solo
+  ~600 KB: scarica il runtime Node.js da nodejs.org e le dipendenze
+  dell'app al momento dell'installazione, non le porta già incluse);
 - durante l'installazione esegue `npm ci`, prepara il database e compila
-  l'app (richiede una connessione a internet attiva);
+  l'app (richiede una connessione a internet attiva per l'intera durata);
 - crea un collegamento sul Desktop per avviare/aprire l'app nel browser
   predefinito su `http://localhost:3000`.
 

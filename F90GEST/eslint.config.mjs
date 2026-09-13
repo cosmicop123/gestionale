@@ -16,6 +16,9 @@ const eslintConfig = defineConfig([
     // portatile senza transpilazione, es. dall'installer Windows): CommonJS
     // deliberato, fuori dal codice TypeScript/ESM dell'app.
     "scripts/**",
+    // Area di staging generata da installers/windows/build.sh (snapshot del
+    // codice via git archive): artefatto di build, non sorgente da lintare.
+    "installers/**/.staging/**",
   ]),
 ]);
 

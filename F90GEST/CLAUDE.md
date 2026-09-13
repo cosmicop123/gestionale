@@ -42,6 +42,37 @@ muove nel codice, non ripete il **cosa**.
 - Prossima milestone: **M7 — Eventi**, pratiche SIAE, sponsor, raccolte
   fondi.
 
+### Nota fuori milestone: giustificativi via foto e ricevute per corsi/servizi
+
+Su richiesta esplicita dell'utente (non parte del piano a milestone), durante M7:
+
+- **Upload giustificativo con scatto foto da mobile**: l'input file
+  dell'allegato giustificativo in `TabPrimaNota` ora ha
+  `accept="image/*,application/pdf"`, che sui browser mobile espone
+  "Scatta foto" tra le opzioni del selettore nativo, oltre a poter caricare
+  un file già salvato. Nessuna nuova dipendenza: il flusso di upload
+  (`registraMovimentoManuale`, invariato) già gestiva qualunque mimetype.
+- **Ricevute per corsi e altri servizi a pagamento**: la pipeline
+  Quota → Pagamento → Ricevuta di M3 era già generica (`TipoQuota`/`Quota`
+  non richiedono che la persona sia socia, `naturaFiscale` include già
+  `corrispettivo_specifico` per servizi non associativi) — mancava solo
+  l'integrazione diretta nel modulo Corsi. Aggiunta `generaQuotaIscrizioneCorso`
+  (`src/lib/iscrizione-corso/quota.ts`): crea (una sola volta per corso,
+  riusata per tutti gli iscritti) un `TipoQuota` dedicato e una `Quota`
+  collegata via `Quota.iscrizioneCorsoId` — colonna già prevista dallo
+  schema di M0 e mai popolata prima d'ora. Il pagamento e la ricevuta
+  restano quelli di sempre (`registraPagamentoQuota`, invariato). La tab
+  Iscrizioni dei corsi mostra ora una colonna "Quota" con il bottone
+  "Genera quota" (se il corso ha un `quotaPartecipazione`), poi lo stato
+  della quota e il link alla ricevuta una volta pagata.
+  `generaQuotaSingola` (`src/lib/quota/actions.ts`) è stata esportata e
+  estesa con un parametro opzionale `iscrizioneCorsoId`, riusata sia dal
+  flusso quote associative sia da questo.
+- Lo stesso schema (Quota già pronta per `iscrizioneEventoId`) potrà
+  coprire in futuro anche le partecipazioni a pagamento degli eventi di
+  M7, se richiesto: non ancora fatto per restare nello scope di quanto
+  chiesto ora.
+
 ### Note di continuità per M6 (da tenere presenti in M7+)
 
 - **Nessuna migrazione Prisma necessaria**: `MovimentoPrimaNota.categoriaRendiconto`

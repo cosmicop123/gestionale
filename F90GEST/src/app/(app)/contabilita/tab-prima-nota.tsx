@@ -162,7 +162,17 @@ function NuovoMovimentoDialog({ conti }: { conti: Conto[] }) {
                 <Label htmlFor="giustificativo" className="flex items-center gap-1.5">
                   <Paperclip className="size-4" /> Allegato giustificativo
                 </Label>
-                <input id="giustificativo" name="giustificativo" type="file" className="text-sm" />
+                <input
+                  id="giustificativo"
+                  name="giustificativo"
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Fattura, ricevuta o scontrino: da smartphone puoi scattare direttamente una foto,
+                  oppure caricare un file già salvato (PDF o immagine).
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="motivazioneAssenzaGiustificativo">

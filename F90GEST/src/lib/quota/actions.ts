@@ -15,13 +15,14 @@ export type EsitoAzioneQuota =
   | { errore: string }
   | { successo: true; generate: number; saltate: { personaId: string; motivo: string }[] };
 
-async function generaQuotaSingola(
+export async function generaQuotaSingola(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
   personaId: string,
   tipoQuotaId: string,
   scadenza: Date,
-  utenteId: string
-): Promise<{ ok: true } | { ok: false; motivo: string }> {
+  utenteId: string,
+  extra?: { iscrizioneCorsoId?: string }
+): Promise<{ ok: true; quotaId: string } | { ok: false; motivo: string }> {
   const tipoQuota = await tx.tipoQuota.findUnique({ where: { id: tipoQuotaId } });
   if (!tipoQuota || tipoQuota.deletedAt) return { ok: false, motivo: "Tipo di quota non trovato." };
 
@@ -35,7 +36,7 @@ async function generaQuotaSingola(
   });
   if (quotaEsistente) return { ok: false, motivo: "Quota già generata per questo tipo e anno sociale." };
 
-  await tx.quota.create({
+  const quota = await tx.quota.create({
     data: {
       personaId,
       tipoQuotaId,
@@ -44,10 +45,11 @@ async function generaQuotaSingola(
       scadenza,
       stato: "da_pagare",
       naturaFiscale: tipoQuota.naturaFiscale,
+      iscrizioneCorsoId: extra?.iscrizioneCorsoId ?? null,
       createdById: utenteId,
     },
   });
-  return { ok: true };
+  return { ok: true, quotaId: quota.id };
 }
 
 export async function generaQuota(datiGrezzi: DatiGeneraQuota): Promise<EsitoAzioneQuota> {

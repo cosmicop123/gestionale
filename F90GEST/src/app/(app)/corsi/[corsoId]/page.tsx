@@ -26,7 +26,11 @@ export default async function DettaglioCorsoPage({
       lezioni: { where: { deletedAt: null }, orderBy: { numeroProgressivo: "asc" }, include: { docenteEffettivo: true } },
       iscrizioni: {
         where: { deletedAt: null },
-        include: { persona: true, attestato: true },
+        include: {
+          persona: true,
+          attestato: true,
+          quota: { include: { pagamenti: { include: { ricevuta: true } } } },
+        },
         orderBy: { dataIscrizione: "asc" },
       },
     },
@@ -39,13 +43,20 @@ export default async function DettaglioCorsoPage({
     redirect("/corsi?errore=permessi");
   }
 
-  const persone = puoGestire
-    ? await prisma.persona.findMany({
-        where: { deletedAt: null },
-        select: { id: true, nome: true, cognome: true },
-        orderBy: [{ cognome: "asc" }, { nome: "asc" }],
-      })
-    : [];
+  const puoGestireIncassi = puoGestire || utente.ruolo === "tesoriere";
+
+  const [persone, conti] = await Promise.all([
+    puoGestire
+      ? prisma.persona.findMany({
+          where: { deletedAt: null },
+          select: { id: true, nome: true, cognome: true },
+          orderBy: [{ cognome: "asc" }, { nome: "asc" }],
+        })
+      : Promise.resolve([]),
+    puoGestireIncassi
+      ? prisma.conto.findMany({ where: { deletedAt: null }, orderBy: { nome: "asc" } })
+      : Promise.resolve([]),
+  ]);
 
   const iscrizioniConRiepilogo = await Promise.all(
     corso.iscrizioni
@@ -92,8 +103,11 @@ export default async function DettaglioCorsoPage({
             corsoId={corso.id}
             iscrizioni={corso.iscrizioni}
             persone={persone}
+            conti={conti}
             capienzaMassima={corso.capienzaMassima}
+            quotaPartecipazione={corso.quotaPartecipazione ? Number(corso.quotaPartecipazione) : null}
             puoGestire={puoGestire}
+            puoGestireIncassi={puoGestireIncassi}
           />
         </TabsContent>
         <TabsContent value="attestati">

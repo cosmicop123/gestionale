@@ -84,8 +84,16 @@ segreteria e sola lettura in sola consultazione):
 - **Prima nota**: puoi registrare anche movimenti non legati a una quota
   (es. una spesa per materiali). Per le uscite oltre una certa soglia è
   obbligatorio allegare uno scontrino/fattura oppure spiegare perché non
-  c'è. Un movimento sbagliato si **storna** (si annulla con un movimento
-  di segno opposto), non si cancella mai.
+  c'è. Da smartphone puoi **scattare direttamente una foto** del
+  giustificativo invece di caricare un file già salvato. Un movimento
+  sbagliato si **storna** (si annulla con un movimento di segno opposto),
+  non si cancella mai.
+- **Quote, corsi e altri servizi a pagamento**: da **Tipi di quota** puoi
+  creare non solo quote associative ma qualsiasi servizio a pagamento
+  (es. tessera assicurativa, noleggio sala), scegliendo la natura fiscale
+  più adatta; la quota generata si incassa e riceve esattamente come una
+  quota associativa. Per i corsi con una quota di partecipazione, questo è
+  già integrato direttamente nella scheda del corso (vedi sezione Corsi).
 - **Chiusura dell'anno sociale**: quando chiudi un anno da Amministrazione,
   il gestionale calcola da solo il saldo finale di ogni conto; il nuovo
   anno sociale parte automaticamente con quel saldo come saldo iniziale.
@@ -121,6 +129,11 @@ Da **Corsi** puoi:
 - Un **docente** vede in questa sezione solo i corsi a cui è stato
   assegnato, e può fare l'appello ma non gestire iscrizioni o generare
   attestati (riservato ad amministratore e segreteria).
+- Se il corso ha una **quota di partecipazione**, dalla tab Iscrizioni puoi
+  premere **"Genera quota"** sull'iscrizione e poi **"Incassa"** per
+  registrare il pagamento: il gestionale crea da solo il movimento di
+  prima nota e la ricevuta, esattamente come per una quota associativa —
+  non serve inserirli a mano separatamente.
 
 ## Iscrizione pubblica ai corsi e privacy
 

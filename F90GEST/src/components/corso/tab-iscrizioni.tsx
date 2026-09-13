@@ -44,14 +44,18 @@ import {
   type DatiIscrizioneCorso,
 } from "@/lib/validazioni/corso";
 import { iscriviPersona, ritiraIscrizione, confermaIscrizione } from "@/lib/iscrizione-corso/actions";
+import { QuotaIscrizioneCella } from "./quota-iscrizione-cella";
 
 type PersonaOpzione = { id: string; nome: string; cognome: string };
+type ContoOpzione = { id: string; nome: string };
+type Pagamento = { id: string; importo: unknown; ricevuta: { id: string; numero: number; annoSolare: number } | null };
 type IscrizioneRiga = {
   id: string;
   stato: string;
   canale: string;
   dataIscrizione: Date;
   persona: { nome: string; cognome: string };
+  quota: { id: string; importo: unknown; stato: string; pagamenti: Pagamento[] } | null;
 };
 
 const VARIANTE_STATO: Record<string, "success" | "warning" | "secondary" | "outline" | "destructive"> = {
@@ -162,14 +166,20 @@ export function TabIscrizioni({
   corsoId,
   iscrizioni,
   persone,
+  conti,
   capienzaMassima,
+  quotaPartecipazione,
   puoGestire,
+  puoGestireIncassi,
 }: {
   corsoId: string;
   iscrizioni: IscrizioneRiga[];
   persone: PersonaOpzione[];
+  conti: ContoOpzione[];
   capienzaMassima: number | null;
+  quotaPartecipazione: number | null;
   puoGestire: boolean;
+  puoGestireIncassi: boolean;
 }) {
   const router = useRouter();
   const personeGiaIscritte = new Set(
@@ -216,13 +226,14 @@ export function TabIscrizioni({
               <TableHead>Canale</TableHead>
               <TableHead>Data iscrizione</TableHead>
               <TableHead>Stato</TableHead>
+              <TableHead className="text-right">Quota</TableHead>
               {puoGestire && <TableHead className="text-right">Azioni</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {iscrizioni.length === 0 && (
               <TableRow>
-                <TableCell colSpan={puoGestire ? 5 : 4} className="text-center text-muted-foreground">
+                <TableCell colSpan={puoGestire ? 6 : 5} className="text-center text-muted-foreground">
                   Nessuna iscrizione.
                 </TableCell>
               </TableRow>
@@ -242,6 +253,15 @@ export function TabIscrizioni({
                     {ETICHETTE_STATI_ISCRIZIONE[iscrizione.stato as keyof typeof ETICHETTE_STATI_ISCRIZIONE] ??
                       iscrizione.stato}
                   </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <QuotaIscrizioneCella
+                    iscrizioneId={iscrizione.id}
+                    quota={iscrizione.quota}
+                    conti={conti}
+                    quotaPartecipazione={quotaPartecipazione}
+                    puoGestireIncassi={puoGestireIncassi}
+                  />
                 </TableCell>
                 {puoGestire && (
                   <TableCell className="text-right">

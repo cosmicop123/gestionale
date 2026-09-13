@@ -46,16 +46,89 @@ muove nel codice, non ripete il **cosa**.
   testuale con generazione PDF su richiesta (non persistito), registro di
   protocollo in entrata/uscita numerato per anno e tipo, archivio documenti
   dell'associazione con categorie, scadenze e versionamento (nuove versioni
-  non cancellano le precedenti).
+  non cancellano le precedenti). M9: comunicazioni email segmentate (soci
+  attivi, iscritti a un corso, morosi, volontari, selezione personalizzata)
+  con template a variabili e invio via SMTP (nodemailer), registro dei
+  trattamenti, richieste dell'interessato (accesso con esportazione dati,
+  rettifica, cancellazione) con registrazione dell'esito, revoca dei
+  consensi granulari raccolti in M5.
 - **Da qui in avanti l'utente ha chiesto di procedere in automatico su
   tutte le milestone rimanenti (M8-M10), senza fermarsi per conferma dopo
   ognuna** — istruzione esplicita che sostituisce, per il resto del
   progetto, il fermo-dopo-milestone previsto da §10.
-- Prossima milestone: **M9 — Comunicazioni** (email via nodemailer,
-  segmentazione destinatari, template con variabili) e **modulo Privacy**
-  completo (registro dei trattamenti, richieste dell'interessato — accesso,
-  rettifica, cancellazione —, revoca consensi), esplicitamente rimandato da
-  M5 a M9.
+- Prossima milestone: **M10 — Backup/restore da interfaccia**, log di
+  controllo (UI dell'AuditLog), rifinitura finale del manuale utente e
+  hardening.
+
+### Note di continuità per M9 (da tenere presenti in M10)
+
+- **Nessuna migrazione Prisma necessaria**: `Comunicazione`,
+  `ComunicazioneInvio`, `RegistroTrattamenti`, `RichiestaInteressato` erano
+  già completi nello schema di M0 (solo `Informativa`/`Consenso`, usati
+  anche da M5, avevano già codice).
+- **Configurazione SMTP da variabili d'ambiente, non da Parametro**:
+  a differenza delle soglie/mappature di business (§3.4/§12, sempre
+  Parametro), le credenziali SMTP (`SMTP_HOST`/`PORT`/`USER`/`PASSWORD`/`FROM`,
+  già previste in `.env.example` e `docker-compose.yml` ma mai lette da
+  nessun codice prima d'ora) sono lette direttamente da `process.env` in
+  `src/lib/email/invio.ts`: sono segreti, non regole configurabili
+  dall'interfaccia. Se `SMTP_HOST` è vuoto (default in sviluppo/test),
+  l'invio fallisce in modo pulito (`{ ok: false, errore }`) invece di far
+  fallire la build o la richiesta.
+- **Segmentazione destinatari con filtro automatico su email mancante**:
+  `risolviDestinatari` (`src/lib/comunicazione/destinatari.ts`) esclude
+  sempre le persone senza email — non generano nemmeno una riga
+  `ComunicazioneInvio`, perché non c'è un canale su cui tracciare un
+  mancato invio. "Morosi" prende una sola quota per persona (la più
+  vicina alla scadenza) anche se ne ha più di una scaduta, per non
+  duplicare l'invio.
+- **Decisione di design sul consenso newsletter, da rivedere se necessario**:
+  l'invio di una comunicazione (qualunque segmento, non solo
+  "personalizzato") viene bloccato solo per chi ha un consenso
+  `newsletter_promozionale` con stato `revocato` o `negato` esplicitamente
+  registrato — l'assenza di un consenso (la maggioranza dei soci non è mai
+  passata dal form pubblico di M5 che lo raccoglie) NON blocca l'invio,
+  altrimenti i segmenti "soci attivi"/"morosi"/"volontari" non
+  raggiungerebbero quasi nessuno. Non è una determinazione legale
+  definitiva (§12): è il default più coerente con l'unico segnale di
+  consenso oggi raccolto dal gestionale, documentato qui per essere
+  rivisto consapevolmente se l'associazione necessita di una policy più
+  restrittiva (es. richiedere consenso esplicito per ogni invio non
+  strettamente operativo).
+- **I consensi restano append-only anche in revoca**: `revocaConsenso`
+  (`src/lib/consenso/actions.ts`) non aggiorna la riga `Consenso`
+  esistente ma ne crea una nuova con `stato: "revocato"`, riferita
+  all'informativa attualmente pubblicata — lo stato "corrente" di un
+  consenso è sempre la riga più recente per (persona, tipo), stesso
+  principio già usato per lo storico stati del socio (M2) e per
+  l'informativa stessa (mai aggiornata, sempre una nuova versione).
+- **Richieste di cancellazione/rettifica: solo registrazione dell'esito,
+  nessuna automazione**: il gestionale non cancella o modifica dati da
+  solo in risposta a una `RichiestaInteressato` — la valutazione di come
+  evaderla (specie per la cancellazione, in conflitto con gli obblighi di
+  conservazione fiscale su quote/ricevute/movimenti collegati) è una
+  decisione che spetta all'associazione (§12: "non inventare regole
+  legali/fiscali"). Il campo `esito` è testo libero che l'operatore
+  compila dopo aver agito manualmente altrove nel gestionale (o fuori da
+  esso). Solo la richiesta di **accesso** ha un'azione automatizzata:
+  `generaEsportazioneRichiesta` costruisce un JSON leggibile (non un dump
+  grezzo delle tabelle) con i dati della persona e lo allega riusando
+  `salvaAllegato`/la rotta generica di download allegati già confermata
+  generica in M8, invece di un nuovo meccanismo di file dedicato.
+- **Pattern e2e per un multi-select di persone**: il picker "selezione
+  personalizzata" di una comunicazione è una lista di `Checkbox` dentro un
+  contenitore scrollabile, non una `<Select multiple>`; ogni `Checkbox` ha
+  un `aria-label` esplicito (`"{cognome} {nome}"`) per poter essere
+  selezionata in e2e con `getByRole("checkbox", { name: ... })` senza
+  ambiguità, invece di affidarsi al testo del `<label>` che lo racchiude
+  (che include anche l'email tra parentesi e avrebbe reso `getByText`
+  ambiguo o fragile).
+- **`getByText` e strict mode con i toast**: un toast di conferma
+  (es. "Comunicazione creata come bozza.") può contenere per sostringa
+  case-insensitive il testo di un badge di stato altrove nella pagina
+  (es. "Bozza") — capitato in `e2e/10-comunicazioni-privacy.spec.ts`,
+  risolto con `{ exact: true }`, variante dello stesso problema già visto
+  più volte per il mirror `<select>` nascosto dei `Select` Radix.
 
 ### Note di continuità per M8 (da tenere presenti in M9+)
 
@@ -420,16 +493,20 @@ Su richiesta esplicita dell'utente (non parte del piano a milestone), durante M7
   ricreato una volta sola all'inizio della run da `global-setup.ts`, non
   per singolo file): i file di test sono numerati (`01-login`, `02-soci`,
   `03-contabilita`, `04-corsi`, `05-iscrizione-pubblica`, `06-rendiconto`,
-  `07-quota-corso`, `08-eventi`, `09-libri-sociali-documenti`) apposta,
-  perché Playwright con `workers: 1` li esegue in ordine alfabetico e
-  alcuni assumono lo stato lasciato dai precedenti (es. `02-soci` richiede
-  che l'onboarding sia già stato completato da `01-login`,
+  `07-quota-corso`, `08-eventi`, `09-libri-sociali-documenti`,
+  `10-comunicazioni-privacy`) apposta, perché Playwright con `workers: 1`
+  li esegue in ordine alfabetico e alcuni assumono lo stato lasciato dai
+  precedenti (es. `02-soci` richiede che l'onboarding sia già stato
+  completato da `01-login`,
   `04-corsi`/`07-quota-corso`/`08-eventi`/`09-libri-sociali-documenti`
   riusano la persona "Giulia Verdi" e il conto "Cassa contanti" creati in
   `03-contabilita`, `05-iscrizione-pubblica` pubblica la propria
-  informativa privacy e crea il proprio corso, e `06-rendiconto` verifica
+  informativa privacy e crea il proprio corso, `06-rendiconto` verifica
   che il saldo di cassa e il movimento categorizzato "quote_associative"
-  di `03-contabilita` compaiano correttamente nel rendiconto).
+  di `03-contabilita` compaiano correttamente nel rendiconto, e
+  `10-comunicazioni-privacy` riusa "Paolo Neri" — creato in
+  `05-iscrizione-pubblica` con un consenso al trattamento dati concesso —
+  per testare la revoca di un consenso).
   Se si aggiungono nuovi file di test E2E che dipendono da uno stato
   pregresso, dar loro un prefisso numerico coerente con l'ordine di
   dipendenza invece di dare per scontato l'ordine alfabetico naturale dei

@@ -250,6 +250,48 @@ Da **Documenti e protocollo**:
   facoltativo; ogni protocollo riceve un numero progressivo annuale per
   tipo (entrata/uscita), come un registro di protocollo tradizionale.
 
+## Comunicazioni
+
+Da **Comunicazioni** puoi inviare email a gruppi di persone:
+
+- **Nuova comunicazione**: scegli il segmento di destinatari (soci attivi,
+  iscritti a un corso specifico, soci con quote scadute non pagate,
+  volontari, oppure una selezione personalizzata di persone), scrivi
+  oggetto e testo dell'email usando variabili come `{{nome}}`, `{{cognome}}`
+  e, a seconda del segmento, `{{corso}}` oppure `{{importo}}`/`{{scadenza}}`
+  (mostrate sotto il campo segmento).
+- La comunicazione resta in **bozza** finché non premi **"Invia ora"**:
+  puoi rileggerla o eliminarla prima di quel momento.
+- Dopo l'invio, la scheda della comunicazione mostra l'esito per ciascun
+  destinatario (inviata, fallita, oppure non inviata perché la persona ha
+  revocato il consenso alla newsletter).
+- **Attenzione**: l'invio richiede un server SMTP configurato
+  dall'amministratore di sistema (variabili d'ambiente, non
+  un'impostazione di questa pagina) — senza SMTP configurato gli invii
+  risultano tutti "falliti".
+
+## Privacy
+
+Da **Privacy**:
+
+- **Registro dei trattamenti**: tieni l'elenco dei trattamenti di dati
+  effettuati dall'associazione (finalità, base giuridica, categorie di
+  dati e di interessati, tempi di conservazione, misure di sicurezza), come
+  richiesto dalla normativa sulla protezione dei dati.
+- **Richieste dell'interessato**: registra una richiesta di accesso,
+  rettifica o cancellazione ricevuta da una persona. Per le richieste di
+  **accesso** puoi generare ed esportare un file con un riepilogo dei dati
+  che il gestionale conserva su quella persona. Per tutte le richieste,
+  registra poi l'esito (cosa è stato fatto) — la valutazione di come
+  evadere una rettifica o una cancellazione, specie quando ci sono dati che
+  vanno conservati per obblighi fiscali, resta una decisione
+  dell'associazione: il gestionale non cancella né modifica nulla in
+  automatico.
+- **Consensi**: cerca una persona per vedere lo stato attuale dei suoi
+  consensi (trattamento dati, immagini e video, newsletter, comunicazione a
+  terzi) e **revocarne** uno su richiesta, indicando come è arrivata la
+  richiesta di revoca.
+
 ## Anni sociali
 
 Da **Amministrazione → Anni sociali** puoi creare un nuovo anno sociale
@@ -261,5 +303,4 @@ reversibile da qui — usala solo quando l'anno è davvero terminato.
 
 | Milestone | Cosa diventa utilizzabile |
 |---|---|
-| M9 | Invio email e comunicazioni, modulo Privacy completo |
 | M10 | Backup/ripristino da interfaccia, log di controllo |

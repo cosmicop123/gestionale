@@ -93,6 +93,14 @@ segreteria e sola lettura in sola consultazione):
   ancora pagata), passa automaticamente ad "attivo".
 - **Ricevute**: scaricabili in PDF in qualsiasi momento; se emessa per
   errore, si annulla (mai cancellata) indicando il motivo.
+- **Correggere la numerazione delle ricevute** (solo amministratore,
+  bottone "Correggi numerazione" nella tab Ricevute): utile se inizi a
+  usare il gestionale dopo aver già emesso ricevute "a mano" nello stesso
+  anno — indica l'anno e il numero da cui vuoi che riparta la prossima
+  ricevuta emessa dal gestionale. Tutte le ricevute già registrate nel
+  gestionale per quell'anno vengono annullate in blocco (restano
+  consultabili con la dicitura "ANNULLATA", non vengono mai cancellate) e
+  la numerazione riparte pulita dal numero che hai indicato.
 - **Prima nota**: puoi registrare anche movimenti non legati a una quota
   (es. una spesa per materiali). Per le uscite oltre una certa soglia è
   obbligatorio allegare uno scontrino/fattura oppure spiegare perché non

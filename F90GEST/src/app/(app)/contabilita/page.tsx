@@ -122,7 +122,7 @@ export default async function ContabilitaPage() {
           />
         </TabsContent>
         <TabsContent value="ricevute">
-          <TabRicevute ricevute={ricevute} puoScrivere={puoScrivere} />
+          <TabRicevute ricevute={ricevute} puoScrivere={puoScrivere} isAmministratore={utente.ruolo === "amministratore"} />
         </TabsContent>
         <TabsContent value="rendiconto">
           <TabRendiconto dati={datiRendicontoPerAnno} puoScrivere={puoScrivere} />

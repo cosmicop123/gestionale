@@ -484,6 +484,57 @@ testo, es. "Il Presidente Mario Rossi") ora compaiono sulle ricevute PDF.
   suite (serviva solo per l'ispezione visiva una tantum), diverso quindi
   dal pattern dei test e2e permanenti del resto del progetto.
 
+### Nota fuori milestone: correzione della numerazione delle ricevute
+
+Su richiesta esplicita dell'utente: un'associazione che inizia a usare il
+gestionale avendo già emesso ricevute "a mano" nello stesso anno solare
+deve poter continuare la numerazione dal punto giusto, non ripartire da 1
+(duplicherebbe numeri già usati fuori dal software).
+
+- **Mai una cancellazione reale delle ricevute esistenti**: l'utente aveva
+  chiesto esplicitamente di "eliminare" le ricevute già generate.
+  Implementata invece come **annullamento di massa** (stesso meccanismo
+  già esistente di `annullaRicevuta`, applicato a tutte le ricevute non
+  ancora annullate dell'anno scelto): restano nello storico con stato
+  "annullata" e un motivo standard, mai cancellate. Scelta deliberata,
+  non un fraintendimento della richiesta: `Ricevuta` è esplicitamente
+  nell'elenco delle entità append-only di questo progetto (§"Convenzioni
+  di codice" sopra) proprio per garantire la tracciabilità in caso di
+  controllo fiscale — una cancellazione reale avrebbe lasciato "buchi"
+  inspiegabili nello storico. L'annullamento in blocco ottiene lo stesso
+  risultato pratico richiesto (quelle ricevute non contano più, la
+  numerazione riparte pulita) senza perdere la traccia di cosa è successo
+  e perché.
+  **Nota di continuità**: se l'utente dovesse insistere per una
+  cancellazione reale (non solo annullamento), è una richiesta distinta
+  da valutare esplicitamente con lui prima di implementarla — non
+  assumerla implicita in richieste simili future.
+- **`azzeraNumerazioneRicevute`** (`src/lib/ricevuta/actions.ts`), solo
+  amministratore, protetta da una frase di conferma digitata (`AZZERA`,
+  stesso pattern già usato per il ripristino da backup di M10): prende
+  `annoSolare` e `prossimoNumero`, annulla in blocco (con rigenerazione
+  del PDF per mostrare la filigrana "ANNULLATA", fuori transazione per lo
+  stesso motivo già documentato in `generaEAllegaPdfRicevuta`) tutte le
+  ricevute non ancora annullate di quell'anno, e imposta
+  `Numeratore.ultimoNumero = prossimoNumero - 1` per quella combinazione
+  (entita="ricevuta", annoRiferimento=annoSolare) così che la prossima
+  chiamata a `prossimoNumero()` restituisca esattamente il numero
+  richiesto. Usa la forma a callback di `$transaction` (non l'array-form):
+  serve una lettura condizionale (`Numeratore` esiste già o va creato)
+  prima della scrittura, che l'array-form non permette di esprimere.
+- **UI nella tab "Ricevute" di Contabilità**, visibile solo al ruolo
+  amministratore (non al tesoriere, a differenza dell'annullamento di una
+  singola ricevuta che resta permesso anche a lui): un'operazione di
+  massa su dati fiscali merita un livello di autorizzazione più alto di
+  una correzione puntuale.
+- **Non tocca `Pagamento`/`MovimentoPrimaNota`**: grazie a
+  `ON DELETE SET NULL` sulla FK `MovimentoPrimaNota.ricevutaId` (già
+  presente dalla migrazione iniziale), annullare le ricevute non altera
+  né i pagamenti né i movimenti di prima nota collegati — i fatti
+  contabili reali (soldi effettivamente incassati) restano intatti,
+  cambia solo la validità del documento-ricevuta. Comportamento verificato
+  leggendo la migration SQL generata, non assunto.
+
 ### Note di continuità per M10 (milestone finale — utile per lavoro futuro)
 
 - **Nessuna migrazione Prisma necessaria**: M10 non introduce nuovi modelli,

@@ -5,11 +5,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
-import { Loader2, FileText } from "lucide-react";
+import { Loader2, FileText, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import type { Ricevuta } from "@prisma/client";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -29,8 +30,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { annullaRicevuta } from "@/lib/ricevuta/actions";
+import { annullaRicevuta, azzeraNumerazioneRicevute } from "@/lib/ricevuta/actions";
 
 type RicevutaConIntestatario = Ricevuta & { intestatario: { nome: string; cognome: string } };
 
@@ -40,12 +42,91 @@ function formattaEuro(valore: number): string {
   return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(valore);
 }
 
+/**
+ * Corregge la numerazione quando un'associazione inizia a usare il
+ * gestionale avendo già emesso ricevute "a mano" nello stesso anno solare:
+ * annulla in blocco quelle già presenti nel gestionale per l'anno scelto
+ * (mai una cancellazione reale, §7.4) e imposta il prossimo numero da
+ * assegnare. Form nativo + FormData (non react-hook-form), stesso pattern
+ * già usato per il ripristino da backup: un'azione distruttiva protetta
+ * da una frase di conferma digitata, non da un singolo click.
+ */
+function DialogAzzeraNumerazione() {
+  const router = useRouter();
+  const [aperto, setAperto] = useState(false);
+  const [inCorso, setInCorso] = useState(false);
+  const annoCorrente = new Date().getFullYear();
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setInCorso(true);
+    const formData = new FormData(e.currentTarget);
+    const esito = await azzeraNumerazioneRicevute(formData);
+    setInCorso(false);
+    if ("errore" in esito) {
+      toast.error(esito.errore);
+      return;
+    }
+    toast.success(esito.messaggio);
+    setAperto(false);
+    router.refresh();
+  }
+
+  return (
+    <Dialog open={aperto} onOpenChange={setAperto}>
+      <DialogTrigger asChild>
+        <Button type="button" variant="outline" size="sm">
+          <AlertTriangle /> Correggi numerazione
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Correggi la numerazione delle ricevute</DialogTitle>
+          <DialogDescription>
+            Usa questa funzione solo se hai già emesso ricevute fuori dal gestionale nello stesso anno
+            (es. a mano, su carta) prima di iniziare a usarlo: le ricevute già registrate nel gestionale
+            per l&apos;anno scelto verranno <strong>annullate in blocco</strong> (restano nello storico
+            con la filigrana &quot;ANNULLATA&quot;, non vengono cancellate — §7.4) e la numerazione
+            riparte dal numero che indichi.
+          </DialogDescription>
+        </DialogHeader>
+        <form className="space-y-4" onSubmit={onSubmit}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="annoSolare">Anno solare</Label>
+              <Input id="annoSolare" name="annoSolare" type="number" defaultValue={annoCorrente} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="prossimoNumero">Prossimo numero da assegnare</Label>
+              <Input id="prossimoNumero" name="prossimoNumero" type="number" min={1} required />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="conferma">
+              Digita <code>AZZERA</code> per confermare
+            </Label>
+            <Input id="conferma" name="conferma" autoComplete="off" required />
+          </div>
+          <DialogFooter>
+            <Button type="submit" variant="destructive" disabled={inCorso}>
+              {inCorso && <Loader2 className="animate-spin" />}
+              Conferma
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function TabRicevute({
   ricevute,
   puoScrivere,
+  isAmministratore,
 }: {
   ricevute: RicevutaConIntestatario[];
   puoScrivere: boolean;
+  isAmministratore: boolean;
 }) {
   const router = useRouter();
   const [ricevutaDaAnnullare, setRicevutaDaAnnullare] = useState<RicevutaConIntestatario | null>(null);
@@ -69,7 +150,12 @@ export function TabRicevute({
 
   return (
     <Card>
-      <CardContent className="pt-6">
+      <CardContent className="pt-6 space-y-4">
+        {isAmministratore && (
+          <div className="flex justify-end">
+            <DialogAzzeraNumerazione />
+          </div>
+        )}
         <Table>
           <TableHeader>
             <TableRow>

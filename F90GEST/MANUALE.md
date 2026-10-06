@@ -284,10 +284,42 @@ Da **Comunicazioni** puoi inviare email a gruppi di persone:
 - Dopo l'invio, la scheda della comunicazione mostra l'esito per ciascun
   destinatario (inviata, fallita, oppure non inviata perché la persona ha
   revocato il consenso alla newsletter).
-- **Attenzione**: l'invio richiede un server SMTP configurato
-  dall'amministratore di sistema (variabili d'ambiente, non
-  un'impostazione di questa pagina) — senza SMTP configurato gli invii
-  risultano tutti "falliti".
+- **Attenzione**: l'invio richiede un server email configurato — da
+  **Amministrazione → Email e PEC** (vedi sotto) oppure, in assenza di una
+  casella configurata lì, dalle variabili d'ambiente SMTP impostate
+  dall'amministratore di sistema. Senza nessuna delle due configurazioni
+  gli invii risultano tutti "falliti".
+- **Posta in arrivo**: in questa stessa pagina, la tab "Posta in arrivo"
+  mostra i messaggi scaricati dalle caselle email configurate (vedi sotto).
+  Clicca "Sincronizza tutte le caselle" per scaricare i messaggi nuovi, poi
+  clicca su un messaggio per leggerlo (si segna automaticamente come
+  letto).
+
+## Email e PEC (Amministrazione)
+
+Da **Amministrazione → Email e PEC** puoi configurare le caselle email con
+cui il gestionale invia le comunicazioni e scarica la posta in arrivo —
+sia una casella **ordinaria** (es. la email istituzionale
+dell'associazione) sia una casella **PEC** (Posta Elettronica Certificata).
+
+- **"Nuova casella"**: inserisci tipo (ordinaria o PEC), un nome
+  descrittivo, l'indirizzo email, e i parametri per **invio (SMTP)** e
+  **ricezione (IMAP)** forniti dal tuo gestore di posta — host, porta,
+  tipo di sicurezza (nessuna, STARTTLS o TLS/SSL), utente e password.
+  Questi dati si trovano solitamente nelle istruzioni di configurazione
+  manuale del tuo provider email o PEC (es. Aruba, Poste, Gmail, ecc.).
+- Solo una casella di tipo "ordinaria" **attiva** alla volta viene usata
+  per inviare le comunicazioni del modulo omonimo; se nessuna è attiva, il
+  gestionale usa la configurazione SMTP da variabili d'ambiente (se
+  presente).
+- L'icona a forma di presa ("Verifica connessione") controlla che le
+  credenziali inserite funzionino davvero, senza inviare né scaricare
+  nulla — utile per capire subito se un parametro è sbagliato.
+- L'icona di sincronizzazione scarica i messaggi nuovi di quella casella
+  (consultabili da Comunicazioni → Posta in arrivo); in modifica, lasciare
+  vuoto un campo password mantiene quella già salvata.
+- Le password inserite qui vengono sempre cifrate prima di essere salvate,
+  non sono mai leggibili in chiaro nemmeno da chi ha accesso al database.
 
 ## Privacy
 

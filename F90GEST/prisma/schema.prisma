@@ -151,6 +151,7 @@ model Utente {
   protocolliCreati        Protocollo[]          @relation("ProtocolloCreatedBy")
   documentiCreati         Documento[]           @relation("DocumentoCreatedBy")
   templateDocumentoCreati TemplateDocumento[]   @relation("TemplateDocumentoCreatedBy")
+  caselleEmailCreate      CasellaEmail[]        @relation("CasellaEmailCreatedBy")
   comunicazioniCreate     Comunicazione[]       @relation("ComunicazioneCreatedBy")
   allegatiCreati          Allegato[]            @relation("AllegatoCreatedBy")
   auditLogEventi          AuditLog[]            @relation("AuditLogUtente")
@@ -1105,6 +1106,69 @@ model TemplateDocumento {
   createdById String?
   createdBy   Utente?   @relation("TemplateDocumentoCreatedBy", fields: [createdById], references: [id])
   deletedAt   DateTime?
+}
+
+/// Casella email configurabile da interfaccia (Amministrazione → Email e
+/// PEC), non più solo da variabili d'ambiente: a differenza delle
+/// credenziali SMTP-solo-invio di M9 (lette da process.env, vedi nota di
+/// continuità M9), questa milestone fuori piano permette di configurare
+/// invio (SMTP) E ricezione (IMAP) di una casella ordinaria e/o di una
+/// casella PEC direttamente dall'app. Le password sono sempre cifrate
+/// prima di essere scritte su disco (src/lib/email/cifratura.ts, AES-256-GCM
+/// con chiave da EMAIL_CIFRATURA_SECRET) — mai in chiaro nel database.
+model CasellaEmail {
+  id        String @id @default(cuid())
+  tipo      String // ordinaria | pec
+  etichetta String // nome descrittivo mostrato in UI, es. "Email istituzionale"
+  indirizzoEmail String
+
+  smtpHost      String
+  smtpPorta     Int
+  smtpSicurezza String // nessuna | starttls | tls
+  smtpUtente    String
+  smtpPasswordCifrata String
+
+  imapHost      String
+  imapPorta     Int
+  imapSicurezza String // nessuna | starttls | tls
+  imapUtente    String
+  imapPasswordCifrata String
+
+  attiva           Boolean   @default(true)
+  ultimaSincImap   DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("CasellaEmailCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
+
+  messaggiRicevuti MessaggioEmailRicevuto[]
+
+  @@index([tipo, attiva])
+}
+
+/// Messaggi scaricati via IMAP dalla casella collegata: sincronizzazione su
+/// richiesta (nessun processo in background in questo stack, §4), non in
+/// tempo reale. uidImap + casellaEmailId sono univoci per evitare di
+/// riscaricare due volte lo stesso messaggio a ogni sincronizzazione.
+model MessaggioEmailRicevuto {
+  id             String       @id @default(cuid())
+  casellaEmailId String
+  casellaEmail   CasellaEmail @relation(fields: [casellaEmailId], references: [id])
+  uidImap        Int
+
+  mittente     String
+  oggetto      String
+  dataMessaggio DateTime
+  corpoTesto   String?
+  corpoHtml    String?
+  letto        Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@unique([casellaEmailId, uidImap])
+  @@index([casellaEmailId, letto])
 }
 
 model Comunicazione {

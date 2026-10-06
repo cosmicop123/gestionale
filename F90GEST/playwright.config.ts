@@ -29,6 +29,10 @@ export default defineConfig({
     timeout: 60_000,
     env: {
       DATABASE_URL: "file:./prisma/e2e-test.db",
+      // Necessaria per salvare una casella email/PEC dai test e2e (cifratura
+      // delle password, src/lib/email/cifratura.ts): un valore fisso va bene
+      // qui, non è usata per cifrare dati reali.
+      EMAIL_CIFRATURA_SECRET: "segreto-di-test-e2e-non-usare-in-produzione",
     },
   },
   projects: [

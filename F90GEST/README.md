@@ -28,9 +28,12 @@ adempimenti GDPR di un'associazione culturale italiana.
 > adattati alla palette del logo, numero tessera socio e numero tessera
 > ENAC nella scheda socio, e un sistema di modelli di documento con parti
 > variabili (`{{segnaposto}}`) in Documenti e protocollo, per generare
-> rapidamente lettere/moduli ricorrenti e salvarli in archivio. Vedi
-> `CLAUDE.md` per lo stato di dettaglio e le note di continuità di ogni
-> milestone.
+> rapidamente lettere/moduli ricorrenti e salvarli in archivio, e una
+> configurazione da interfaccia (Amministrazione → Email e PEC) di caselle
+> email ordinarie e PEC per inviare E ricevere posta (SMTP/IMAP), con
+> consultazione della posta in arrivo da Comunicazioni → Posta in arrivo.
+> Vedi `CLAUDE.md` per lo stato di dettaglio e le note di continuità di
+> ogni milestone.
 
 ## Requisiti
 

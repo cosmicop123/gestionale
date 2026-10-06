@@ -319,6 +319,92 @@ parti variabili.
   disponibilità simili in altri contesti CI/test — la preparazione dei dati
   deve sempre precedere l'avvio del server che li legge, mai l'inverso.
 
+### Nota fuori milestone: configurazione server email (invio e ricezione) e PEC
+
+Su richiesta esplicita dell'utente (non parte del piano a milestone), a
+completamento della stessa richiesta fuori piano di logo/tessere/template
+documenti: configurazione da interfaccia di caselle email (ordinarie e
+PEC) con cui il gestionale può sia **inviare** (SMTP, come già faceva M9)
+sia **ricevere** (IMAP, nuovo) posta.
+
+- **Nuovo modello `CasellaEmail`**, non più solo variabili d'ambiente: a
+  differenza della decisione di design di M9 ("le credenziali SMTP sono
+  segreti, vanno in `process.env`, non in `Parametro`"), qui l'utente ha
+  chiesto esplicitamente una configurazione "nel gestionale" — cioè da
+  interfaccia, non da `.env` con riavvio del server. La tensione si
+  risolve così: `CasellaEmail` **esiste** come modello DB-backed
+  (altrimenti l'interfaccia richiesta non sarebbe possibile), ma le
+  password non sono mai scritte in chiaro (`smtpPasswordCifrata`/
+  `imapPasswordCifrata`, cifrate con AES-256-GCM da
+  `src/lib/email/cifratura.ts`, chiave derivata da
+  `EMAIL_CIFRATURA_SECRET`) — un compromesso deliberato tra "configurabile
+  da UI" e "non esporre segreti in un dump del database", non una
+  contraddizione della decisione di M9.
+- **`EMAIL_CIFRATURA_SECRET` fallisce in modo esplicito se assente**
+  (`cifraSegreto`/`decifraSegreto` lanciano un errore con messaggio
+  chiaro) invece di salvare la password in chiaro come fallback silenzioso:
+  un amministratore che non ha ancora impostato questa variabile non può
+  salvare una casella email, punto — mai un comportamento "degradato" che
+  nasconderebbe il problema. **Capitato realmente durante lo sviluppo**: il
+  primo test e2e di questa funzionalità falliva perché l'ambiente di test
+  non aveva `EMAIL_CIFRATURA_SECRET` configurato — il dialog restava aperto
+  dopo "Salva" (comportamento corretto: l'azione fallisce e mostra un
+  toast di errore, mai un salvataggio silenzioso in chiaro). Fix: aggiunta
+  la variabile sia a `playwright.config.ts` (`webServer.env`, un valore
+  fisso di test) sia a `.env.example`/`.env` locale. **Promemoria per il
+  futuro**: qualunque nuova funzionalità che richiede una variabile
+  d'ambiente aggiuntiva va sempre aggiunta anche all'ambiente e2e
+  (`webServer.env` in `playwright.config.ts`), non solo a `.env.example` —
+  altrimenti il primo test che la esercita fallisce in un modo che sembra
+  un bug della funzionalità invece che una lacuna di configurazione del
+  test.
+- **L'invio (M9) preferisce ora una casella "ordinaria" attiva, con
+  fallback alle variabili `SMTP_*`**: `inviaEmail` (`src/lib/email/invio.ts`)
+  cerca prima una `CasellaEmail` con `tipo:"ordinaria"` e `attiva:true`; se
+  non esiste, usa esattamente la logica precedente basata su
+  `process.env`. Questo significa che le installazioni esistenti che
+  configurano l'invio solo via `.env` continuano a funzionare senza
+  modifiche — nessuna migrazione di comportamento forzata.
+- **Ricezione IMAP solo su richiesta, nessun processo in background**
+  (§4, niente infrastruttura di polling/code): `sincronizzaCasellaEmail`
+  (`src/lib/casella-email/actions.ts`) scarica solo quando un
+  amministratore/segreteria clicca "Sincronizza" (dalla tab Email e PEC o
+  da "Sincronizza tutte le caselle" in Comunicazioni → Posta in arrivo).
+  La sincronizzazione è incrementale per UID IMAP (mai per data): l'ultimo
+  UID già scaricato per quella casella (`MAX(uidImap)` nella tabella
+  `MessaggioEmailRicevuto`) determina da dove ripartire, con un vincolo
+  di unicità `(casellaEmailId, uidImap)` che rende l'operazione
+  idempotente anche se rieseguita più volte.
+- **`imapflow`** (client IMAP) e **`mailparser`** (parsing MIME) sono le
+  uniche due nuove dipendenze npm introdotte da questa funzionalità;
+  `nodemailer` (invio) era già presente da M9. `imapflow.fetch(range, query,
+  options)`: il terzo argomento (`{uid:true}`) è quello che determina se
+  `range` è interpretato come intervallo di UID invece che di sequenza —
+  non il campo `uid` dentro l'oggetto `query` (quello serve solo a chiedere
+  che l'UID sia incluso nella risposta). Facile confondere i due, non
+  immediatamente ovvio dalla sola firma del metodo.
+- **Anteprima del contenuto HTML di un messaggio ricevuto in un `<iframe
+  sandbox="">` con `srcDoc`**, mai `dangerouslySetInnerHTML`: il corpo di
+  un'email ricevuta è contenuto arbitrario di un mittente esterno (rischio
+  XSS reale, non teorico — un'email può contenere `<script>`). Un iframe
+  con l'attributo `sandbox` vuoto (nessun `allow-scripts`) isola il
+  contenuto in un'origine opaca, senza eseguire script né accedere a
+  cookie/storage della pagina — stesso principio di "non fidarsi di
+  contenuto esterno" già seguito per il testo dei corsi nel sito pubblico
+  (`escapeHtml`), ma qui lo strumento è l'isolamento del browser invece di
+  un sanitizzatore HTML (nessuna nuova dipendenza di sanitizzazione
+  introdotta).
+- **Nessun test e2e per "Verifica connessione"/"Sincronizza"**: a
+  differenza del resto del flusso (CRUD della casella email, interamente
+  testato in `e2e/14-email-pec.spec.ts`), i bottoni che eseguono una vera
+  connessione di rete (SMTP `verify()`, IMAP `connect()`) non sono
+  esercitati nel test e2e — richiederebbero un server SMTP/IMAP reale (o
+  un mock) raggiungibile dall'ambiente di test, con tempi di risposta non
+  deterministici contro un host inventato. Stessa logica di scope già
+  applicata al ripristino da backup in M10 (non testato e2e per motivi
+  analoghi di affidabilità della suite) — verificato manualmente invece,
+  puntando una casella reale durante lo sviluppo.
+
 ### Note di continuità per M10 (milestone finale — utile per lavoro futuro)
 
 - **Nessuna migrazione Prisma necessaria**: M10 non introduce nuovi modelli,

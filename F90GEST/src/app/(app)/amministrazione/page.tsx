@@ -8,20 +8,40 @@ import { TabInformativa } from "./tab-informativa";
 import { TabBackup } from "./tab-backup";
 import { TabRegistroControllo } from "./tab-registro-controllo";
 import { TabSitoPubblico } from "./tab-sito-pubblico";
+import { TabEmail, type CasellaEmailRiga } from "./tab-email";
 import { ottieniParametriSitoPubblico } from "@/lib/sito-pubblico/parametri";
 import type { DatiEnte } from "@/lib/validazioni/ente";
 
 export default async function AmministrazionePage() {
   const utenteCorrente = await richiediRuolo(["amministratore"]);
 
-  const [associazione, anniSociali, utenti, informativaCorrente, vociAudit, configurazioneSitoPubblico] = await Promise.all([
-    prisma.associazione.findFirst(),
-    prisma.annoSociale.findMany({ orderBy: { dataInizio: "desc" } }),
-    prisma.utente.findMany({ where: { deletedAt: null }, orderBy: { email: "asc" } }),
-    prisma.informativa.findFirst({ orderBy: { dataPubblicazione: "desc" } }),
-    prisma.auditLog.findMany({ include: { utente: true }, orderBy: { timestamp: "desc" }, take: 300 }),
-    ottieniParametriSitoPubblico(),
-  ]);
+  const [associazione, anniSociali, utenti, informativaCorrente, vociAudit, configurazioneSitoPubblico, caselleEmail] =
+    await Promise.all([
+      prisma.associazione.findFirst(),
+      prisma.annoSociale.findMany({ orderBy: { dataInizio: "desc" } }),
+      prisma.utente.findMany({ where: { deletedAt: null }, orderBy: { email: "asc" } }),
+      prisma.informativa.findFirst({ orderBy: { dataPubblicazione: "desc" } }),
+      prisma.auditLog.findMany({ include: { utente: true }, orderBy: { timestamp: "desc" }, take: 300 }),
+      ottieniParametriSitoPubblico(),
+      prisma.casellaEmail.findMany({ where: { deletedAt: null }, orderBy: { etichetta: "asc" } }),
+    ]);
+
+  const caselleEmailRighe: CasellaEmailRiga[] = caselleEmail.map((c) => ({
+    id: c.id,
+    tipo: c.tipo,
+    etichetta: c.etichetta,
+    indirizzoEmail: c.indirizzoEmail,
+    smtpHost: c.smtpHost,
+    smtpPorta: c.smtpPorta,
+    smtpSicurezza: c.smtpSicurezza,
+    smtpUtente: c.smtpUtente,
+    imapHost: c.imapHost,
+    imapPorta: c.imapPorta,
+    imapSicurezza: c.imapSicurezza,
+    imapUtente: c.imapUtente,
+    attiva: c.attiva,
+    ultimaSincImap: c.ultimaSincImap ? c.ultimaSincImap.toISOString() : null,
+  }));
 
   if (!associazione) {
     return <p className="text-sm text-destructive">Anagrafica ente non trovata.</p>;
@@ -69,6 +89,7 @@ export default async function AmministrazionePage() {
           <TabsTrigger value="utenti">Utenti</TabsTrigger>
           <TabsTrigger value="informativa">Informativa privacy</TabsTrigger>
           <TabsTrigger value="sito-pubblico">Sito pubblico</TabsTrigger>
+          <TabsTrigger value="email">Email e PEC</TabsTrigger>
           <TabsTrigger value="backup">Backup e ripristino</TabsTrigger>
           <TabsTrigger value="registro-controllo">Registro di controllo</TabsTrigger>
         </TabsList>
@@ -86,6 +107,9 @@ export default async function AmministrazionePage() {
         </TabsContent>
         <TabsContent value="sito-pubblico">
           <TabSitoPubblico configurazione={configurazioneSitoPubblico} />
+        </TabsContent>
+        <TabsContent value="email">
+          <TabEmail caselle={caselleEmailRighe} />
         </TabsContent>
         <TabsContent value="backup">
           <TabBackup />

@@ -15,6 +15,7 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-}
+      EMAIL_CIFRATURA_SECRET: ${EMAIL_CIFRATURA_SECRET:-}
       STORAGE_DIR: /app/storage
     volumes:
       # Unico punto da salvare per un backup completo: database + allegati.

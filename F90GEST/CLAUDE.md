@@ -133,6 +133,23 @@ con Docker.
   a due file diversi). `genera-env.js` costruisce i percorsi assoluti con
   `path.join(__dirname, ...)`, quindi resta corretto qualunque sia la
   cartella di installazione effettiva.
+- **`genera-env.js` è pensato per girare sia su un'installazione nuova sia
+  su un aggiornamento** (ri-eseguire l'installer su una cartella
+  `$LOCALAPPDATA\F90GEST` già esistente, per distribuire una nuova
+  versione del codice senza perdere database/allegati): se `.env` esiste
+  già, lo script **aggiunge solo le variabili mancanti** (introdotte da
+  una versione più recente, es. `EMAIL_CIFRATURA_SECRET` per la
+  milestone fuori piano email/PEC) senza toccare una riga di quelle già
+  presenti — in origine lo script usciva subito se `.env` esisteva,
+  bug trovato proprio mentre si verificava come arrivare una modifica di
+  codice (es. al formato di un PDF) a un'installazione già fatta
+  dall'utente: con la versione precedente, un aggiornamento avrebbe
+  lasciato l'installazione senza la nuova variabile e la funzionalità che
+  la richiede avrebbe fallito silenziosamente finché non configurata a
+  mano. `File /r "app\*.*"` in `installer.nsi` già si comportava
+  correttamente (sovrascrive solo i file tracciati da git, mai
+  `prisma/data`/`storage` perché non fanno parte dell'archivio) — il
+  problema era solo in questo script.
 - **Sequenza di install identica a quella già in produzione via Docker**:
   `npm ci --legacy-peer-deps` → `prisma migrate deploy` → `prisma db seed`
   → `npm run build`, la stessa di `Dockerfile`/`docker-entrypoint.sh` —

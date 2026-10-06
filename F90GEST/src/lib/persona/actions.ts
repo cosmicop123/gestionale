@@ -47,6 +47,8 @@ export async function creaPersona(datiGrezzi: DatiPersona): Promise<EsitoAzioneP
           residenzaProvincia: dati.residenzaProvincia || null,
           email: dati.email || null,
           telefono: dati.telefono || null,
+          numeroTesseraSocio: dati.numeroTesseraSocio || null,
+          numeroTesseraEnac: dati.numeroTesseraEnac || null,
           note: dati.note || null,
           createdById: utente.id,
         },
@@ -109,6 +111,8 @@ export async function aggiornaPersona(
           residenzaProvincia: dati.residenzaProvincia || null,
           email: dati.email || null,
           telefono: dati.telefono || null,
+          numeroTesseraSocio: dati.numeroTesseraSocio || null,
+          numeroTesseraEnac: dati.numeroTesseraEnac || null,
           note: dati.note || null,
         },
       });

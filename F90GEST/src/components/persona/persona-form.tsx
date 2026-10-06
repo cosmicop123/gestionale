@@ -41,6 +41,8 @@ const VALORI_VUOTI: DatiPersona = {
   residenzaProvincia: "",
   email: "",
   telefono: "",
+  numeroTesseraSocio: "",
+  numeroTesseraEnac: "",
   note: "",
   genitore: undefined,
 };
@@ -177,6 +179,20 @@ export function PersonaForm({ personaId, valoriIniziali }: ProprietaPersonaForm)
         <div className="space-y-2">
           <Label htmlFor="note">Note</Label>
           <Textarea id="note" rows={3} {...register("note")} />
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold text-muted-foreground">Tessere</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="numeroTesseraSocio">Numero tessera socio</Label>
+            <Input id="numeroTesseraSocio" {...register("numeroTesseraSocio")} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="numeroTesseraEnac">Numero tessera ENAC</Label>
+            <Input id="numeroTesseraEnac" {...register("numeroTesseraEnac")} />
+          </div>
         </div>
       </section>
 

@@ -12,6 +12,7 @@ const DATI_BASE: DatiSitoPubblico = {
   pec: "frequenze90@pec.it",
   presentazione: "Un'associazione <culturale> che promuove musica & arte.",
   generatoIl: new Date("2026-09-13T10:00:00Z"),
+  logoDataUri: null,
   corsi: [
     {
       titolo: "Corso di chitarra <base>",
@@ -61,6 +62,16 @@ describe.each(GENERATORI)("template %s", (_nome, generaHtml) => {
     const html = generaHtml(DATI_BASE);
     expect(html).toContain("https://gestionale.frequenze90.it/iscrizione/corso-1");
     expect(html).toContain("Laboratorio teatrale");
+  });
+
+  it("include il logo come data URI quando presente", () => {
+    const html = generaHtml({ ...DATI_BASE, logoDataUri: "data:image/png;base64,AAAA" });
+    expect(html).toContain('src="data:image/png;base64,AAAA"');
+  });
+
+  it("non mostra alcun tag immagine quando il logo non è configurato", () => {
+    const html = generaHtml({ ...DATI_BASE, logoDataUri: null });
+    expect(html).not.toContain("<img");
   });
 
   it("mostra un messaggio quando non ci sono corsi", () => {

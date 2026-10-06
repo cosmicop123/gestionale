@@ -4,9 +4,61 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { richiediRuolo } from "@/lib/auth/richiedi-utente";
 import { registraAudit } from "@/lib/audit";
+import { salvaAllegato } from "@/lib/storage";
 import { schemaEnte, type DatiEnte } from "@/lib/validazioni/ente";
 
 export type EsitoSalvaEnte = { errore: string } | { successo: true };
+
+const TIPI_IMMAGINE_CONSENTITI = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
+
+/**
+ * Carica/sostituisce il logo dell'associazione, usato in sidebar, pagina di
+ * login e nel generatore del sito pubblico (§vedi CLAUDE.md, nota fuori
+ * milestone sul logo). Il vecchio Allegato (se presente) resta su disco,
+ * non referenziato: stesso comportamento già accettato per il
+ * versionamento dei documenti in M8, nessuna pulizia automatica.
+ */
+export async function caricaLogo(formData: FormData): Promise<EsitoSalvaEnte> {
+  const utente = await richiediRuolo(["amministratore"]);
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { errore: "Selezionare un file immagine." };
+  }
+  if (!TIPI_IMMAGINE_CONSENTITI.includes(file.type)) {
+    return { errore: "Formato non supportato: usare PNG, JPG, WEBP o SVG." };
+  }
+
+  const associazioneEsistente = await prisma.associazione.findFirst();
+  if (!associazioneEsistente) {
+    return { errore: "Anagrafica ente non trovata: contattare l'assistenza tecnica." };
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const allegato = await salvaAllegato({
+    entitaTipo: "Associazione",
+    entitaId: associazioneEsistente.id,
+    nomeFileOriginale: file.name,
+    mimeType: file.type,
+    buffer,
+    createdById: utente.id,
+  });
+
+  await prisma.associazione.update({
+    where: { id: associazioneEsistente.id },
+    data: { logoAllegatoId: allegato.id },
+  });
+
+  await registraAudit({
+    utenteId: utente.id,
+    entita: "Associazione",
+    entitaId: associazioneEsistente.id,
+    azione: "aggiornamento_logo",
+  });
+
+  revalidatePath("/", "layout");
+  return { successo: true };
+}
 
 /**
  * Salva l'anagrafica dell'ente. Usata sia dal wizard di primo avvio

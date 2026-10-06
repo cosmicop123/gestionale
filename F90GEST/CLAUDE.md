@@ -216,6 +216,109 @@ corsi disponibili, con 2-3 template preconfezionati tra cui scegliere.
   vuoto o "non specificato" — coerente con l'idea che il sito vetrina deve
   restare pulito anche con dati incompleti.
 
+### Nota fuori milestone: logo associazione, rebrand colori, tessere socio/ENAC, template documenti
+
+Su richiesta esplicita dell'utente (non parte del piano a milestone), dopo
+il generatore di sito pubblico: caricamento del logo dell'associazione,
+rebrand dei colori dell'app sulla palette del logo, due nuovi campi
+anagrafici (tessera socio/ENAC) e un sistema di modelli di documento con
+parti variabili.
+
+- **Logo caricato come `Allegato` generico**, non un nuovo modello: `Associazione.logoAllegatoId`
+  (nullable) punta a un `Allegato` salvato con `salvaAllegato({entitaTipo:"Associazione",...})`,
+  stesso pattern generico già confermato in M8 per documenti/protocollo.
+  `caricaLogo` (`src/lib/ente/actions.ts`) valida il mime-type
+  (`image/png|jpeg|svg+xml|webp`), solo amministratore.
+- **Rotta pubblica dedicata `/logo` (`src/app/logo/route.ts`), separata da
+  `/contabilita/allegati/[id]`**: quella rotta richiede `richiediUtente()`
+  (autenticata) ed è sbagliata per il logo sulla pagina di login/iscrizione
+  pubblica, che non hanno sessione. `/logo` serve lo stesso allegato ma
+  senza richiedere autenticazione — unica eccezione intenzionale alla
+  regola "ogni pagina/azione richiede `richiediUtente`/`richiediRuolo`",
+  perché il logo non è un dato sensibile. Nella sidebar autenticata si usa
+  invece `/contabilita/allegati/[id]` (già corretto, nessun cambiamento).
+  Nel generatore di sito pubblico (che produce un file HTML autosufficiente,
+  destinato a essere ospitato altrove, senza accesso alle rotte interne del
+  gestionale) il logo viene invece incorporato come data URI base64
+  (`src/lib/sito-pubblico/dati.ts`), non come link a nessuna delle due
+  rotte precedenti.
+- **Colori di brand ricavati dal logo via tooling ad hoc** (Python/PIL +
+  `coloraide` per convertire hex→OKLCH e verificare il contrasto WCAG-AA),
+  non parte delle dipendenze dell'app — solo per calcolare i valori
+  `oklch(...)` scritti a mano in `src/app/globals.css`. `--destructive`
+  è stato lasciato intenzionalmente invariato (vedi commento nel CSS): il
+  corallo del brand non va confuso con la semantica di "pericolo/elimina".
+- **Tessere socio/ENAC su `Persona`, non su `Socio`**: `Socio` è
+  deliberatamente immutabile per costruzione (decisione di design §1 sopra,
+  niente `updatedAt`); i nuovi campi `numeroTesseraSocio`/`numeroTesseraEnac`
+  sono invece dati che possono cambiare (es. tessera persa e rinnovata) e
+  indipendenti dal libro soci, quindi vanno sulla `Persona` mutabile, non su
+  `Socio` — coerente con la stessa distinzione già fatta altrove nello
+  schema tra dati anagrafici mutabili e storico append-only.
+- **Template documento: testo semplice con `{{segnaposto}}`, non upload di
+  un file `.docx`**: la prima versione tentata (rifacendosi al pattern
+  "modello compilabile" dell'altro progetto citato dall'utente, "ufficio
+  PEC") usava `docxtemplater`+`pizzip` per compilare un `.docx` caricato.
+  Scartata dopo aver verificato con un `.docx` sintetico (generato con
+  python-docx) che Word/autocorrezione spezza spesso un singolo `{{tag}}`
+  su più run XML (`<w:r>`) interni al file, cosa che il parser a regex di
+  docxtemplater non gestisce ("Duplicate open/close tag") — problema noto
+  della libreria, non affidabilmente testabile/mitigabile in questo
+  ambiente senza un Word reale. Design pivot verso testo semplice
+  compilato con `sostituisciVariabili` (già scritta in M9 per i template
+  email) e renderizzato in PDF con `@react-pdf/renderer` (già usato
+  ovunque in app) — nessuna nuova dipendenza, nessun nuovo formato di
+  file, solo riuso di infrastruttura già collaudata. `estraiVariabili`
+  (`src/lib/template-documento/variabili.ts`) individua i segnaposto con
+  una semplice regex e genera dinamicamente i campi da compilare in UI.
+  `docxtemplater`/`pizzip` sono stati installati e poi completamente
+  disinstallati durante la verifica di questa idea (nessuna traccia nelle
+  dipendenze finali).
+- **Due modi di generare un documento dal modello**: "Genera e scarica PDF"
+  (rotta POST `/documenti/template/[id]/genera-pdf`, PDF al volo non
+  persistito, stesso pattern del verbale PDF di M8) e "Genera e salva in
+  archivio" (`generaDocumentoDaTemplate`, crea anche una riga `Documento`
+  con l'allegato PDF, visibile nella tab "Documenti" esistente) — stesso
+  form HTML nativo, due pulsanti con comportamento diverso (`type="submit"`
+  per il download, `type="button"` + lettura manuale della `FormData` per
+  il salvataggio), perché i nomi dei campi variabile sono dinamici
+  (dipendono dal modello scelto) e non noti a tempo di compilazione: un
+  form nativo con `FormData` evita di dover tipizzare react-hook-form per
+  campi il cui nome non si conosce in anticipo.
+- **Bug reale di infrastruttura e2e, trovato e corretto durante questa
+  milestone fuori-piano**: dopo aver aggiunto una query a `prisma` nella
+  pagina di login (per mostrare il logo), l'intera suite e2e ha iniziato a
+  fallire in modo deterministico da `01-login.spec.ts` in poi (ogni test
+  successivo al primo login reale) con `SQLITE_READONLY_DBMOVED` ("attempt
+  to write a readonly database"). **Non era un processo zombie** (prima
+  ipotesi, verificata e scartata rieseguendo la suite dopo un cleanup
+  completo dei processi `next-server`: falliva identicamente). Causa reale:
+  `createGlobalSetupTasks` di Playwright (verificato leggendo
+  `node_modules/playwright/lib/runner/index.js`) esegue i plugin `webServer`
+  (avvio del server + attesa "disponibilità" via probe HTTP) **prima** del
+  `globalSetup` configurato dall'utente — non il contrario, e non
+  documentato esplicitamente. Il vecchio `e2e/global-setup.ts` cancellava e
+  ricreava `prisma/e2e-test.db` (rm + migrate + seed) *dopo* che `next
+  start` era già considerato "disponibile": la prima query Prisma reale
+  (ora innescata prima, dalla pagina di login) apriva la connessione
+  SQLite (singleton per tutta la vita del processo, `src/lib/prisma.ts`)
+  sul file esistente in quel momento, che il globalSetup cancellava e
+  ricreava un istante dopo — la connessione restava agganciata al vecchio
+  file ormai spostato, e ogni scrittura successiva per l'intera run falliva
+  (le sole letture, come il rendering della pagina di login nei primi due
+  test, continuavano a "funzionare" leggendo dati stantii, mascherando il
+  problema finché non arrivava il primo login reale con scrittura di una
+  `Sessione`). **Fix**: spostata la preparazione del database (azzeramento
+  + `migrate deploy` + seed, ora `npm run test:e2e:prepara-db`) dentro il
+  comando stesso di `webServer` in `playwright.config.ts`
+  (`"npm run test:e2e:prepara-db && npm run start"`), così il database è
+  garantito pronto **prima** che `next start` venga anche solo avviato —
+  `e2e/global-setup.ts` è stato rimosso, non più necessario. Promemoria
+  per il futuro: qualunque pagina pubblica (login, iscrizione) che inizia a
+  leggere dal database per la prima volta può riesporre probe di
+  disponibilità simili in altri contesti CI/test — la preparazione dei dati
+  deve sempre precedere l'avvio del server che li legge, mai l'inverso.
+
 ### Note di continuità per M10 (milestone finale — utile per lavoro futuro)
 
 - **Nessuna migrazione Prisma necessaria**: M10 non introduce nuovi modelli,

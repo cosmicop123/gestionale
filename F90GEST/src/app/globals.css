@@ -3,8 +3,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Palette sobria e istituzionale (neutral), non "da startup": il gestionale
-   produce documenti ufficiali e deve trasmettere affidabilità. */
+/* Palette ricavata dal logo dell'associazione (teal #11C2D2, oro #F0B030,
+   corallo #F23245): il teal diventa il colore primario dell'interfaccia
+   (bottoni, link, voce attiva della navigazione), l'oro allinea il colore
+   "warning" già esistente alla stessa famiglia cromatica del brand. Il
+   rosso "destructive" resta un colore semantico indipendente (azioni
+   distruttive/di pericolo): non viene fatto coincidere con il corallo del
+   logo, per non confondere un'azione di eliminazione con un semplice
+   accento di marca. Tutti i valori sono stati scelti verificando il
+   contrasto WCAG AA (≥4.5:1) con il relativo colore di testo. */
 :root {
   --radius: 0.5rem;
   --background: oklch(1 0 0);
@@ -13,22 +20,22 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: oklch(0.5 0.11 206);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
+  --secondary: oklch(0.97 0.004 206);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
+  --muted: oklch(0.97 0.004 206);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --accent: oklch(0.95 0.02 206);
+  --accent-foreground: oklch(0.3 0.06 206);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --ring: oklch(0.62 0.11 206);
   --success: oklch(0.62 0.15 145);
   --success-foreground: oklch(0.985 0 0);
-  --warning: oklch(0.75 0.16 80);
+  --warning: oklch(0.797 0.152 79.566);
   --warning-foreground: oklch(0.145 0 0);
 }
 
@@ -39,19 +46,19 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: oklch(0.75 0.09 206);
+  --primary-foreground: oklch(0.18 0.02 206);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --accent: oklch(0.3 0.045 206);
+  --accent-foreground: oklch(0.92 0.03 206);
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --ring: oklch(0.6 0.1 206);
   --success: oklch(0.7 0.15 145);
   --success-foreground: oklch(0.145 0 0);
   --warning: oklch(0.8 0.16 80);

@@ -21,6 +21,10 @@ export default async function IscrizionePubblicaPage() {
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6 px-4 py-10">
       <div>
+        {associazione?.logoAllegatoId && (
+          // eslint-disable-next-line @next/next/no-img-element -- rotta /logo pubblica, non un asset statico
+          <img src="/logo" alt="Logo dell'associazione" className="mb-3 size-14 object-contain" />
+        )}
         <h1 className="text-2xl font-semibold tracking-tight">
           Iscrizione ai corsi — {associazione?.denominazione ?? "Associazione"}
         </h1>

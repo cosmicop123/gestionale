@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
+import { leggiAllegato } from "@/lib/storage";
 import { ottieniParametriSitoPubblico } from "./parametri";
 
 export type CorsoSitoPubblico = {
@@ -21,6 +22,9 @@ export type DatiSitoPubblico = {
   presentazione: string;
   corsi: CorsoSitoPubblico[];
   generatoIl: Date;
+  // data: URI già pronta per <img src>: il sito generato è un file statico
+  // indipendente, non può richiamare la rotta /logo del gestionale.
+  logoDataUri: string | null;
 };
 
 // Corsi mostrati sul sito pubblico: solo quelli aperti alle iscrizioni o già
@@ -49,6 +53,9 @@ export async function costruisciDatiSitoPubblico(): Promise<DatiSitoPubblico> {
 
   const urlBase = parametri.urlBase.replace(/\/+$/, "");
 
+  const logo = associazione.logoAllegatoId ? await leggiAllegato(associazione.logoAllegatoId) : null;
+  const logoDataUri = logo ? `data:${logo.mimeType};base64,${logo.buffer.toString("base64")}` : null;
+
   return {
     denominazione: associazione.denominazione,
     indirizzo: indirizzoOperativo ?? indirizzoLegale,
@@ -57,6 +64,7 @@ export async function costruisciDatiSitoPubblico(): Promise<DatiSitoPubblico> {
     pec: associazione.pec,
     presentazione: parametri.presentazione,
     generatoIl: new Date(),
+    logoDataUri,
     corsi: corsi.map((c) => ({
       titolo: c.titolo,
       descrizione: c.descrizione,

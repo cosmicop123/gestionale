@@ -150,6 +150,7 @@ model Utente {
   riunioniCreate          Riunione[]            @relation("RiunioneCreatedBy")
   protocolliCreati        Protocollo[]          @relation("ProtocolloCreatedBy")
   documentiCreati         Documento[]           @relation("DocumentoCreatedBy")
+  templateDocumentoCreati TemplateDocumento[]   @relation("TemplateDocumentoCreatedBy")
   comunicazioniCreate     Comunicazione[]       @relation("ComunicazioneCreatedBy")
   allegatiCreati          Allegato[]            @relation("AllegatoCreatedBy")
   auditLogEventi          AuditLog[]            @relation("AuditLogUtente")
@@ -220,6 +221,8 @@ model Persona {
   telefono           String?
   note               String?
   fotoAllegatoId     String?
+  numeroTesseraSocio String? // numero di tessera fisica del socio (facoltativo, indipendente dal libro soci)
+  numeroTesseraEnac  String? // numero di tessera ENAC dell'associato, se presente
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -1083,6 +1086,25 @@ model Documento {
 
   @@index([categoria])
   @@index([scadenza])
+}
+
+/// Modello/formato di documento con segnaposto {{variabile}} nel testo:
+/// compilando i valori si genera un nuovo documento (PDF), scaricabile o
+/// salvabile nell'archivio Documento. Testo semplice (non un file .docx
+/// caricato) per evitare la fragilità dei tag spezzati su più run XML di
+/// Word quando un modello viene digitato/corretto automaticamente — vedi
+/// nota di continuità in CLAUDE.md.
+model TemplateDocumento {
+  id          String  @id @default(cuid())
+  nome        String
+  descrizione String?
+  corpoTesto  String // testo del modello con segnaposto {{variabile}}
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   Utente?   @relation("TemplateDocumentoCreatedBy", fields: [createdById], references: [id])
+  deletedAt   DateTime?
 }
 
 model Comunicazione {

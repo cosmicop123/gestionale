@@ -11,10 +11,12 @@ import { vociNavigazione } from "./moduli-navigazione";
 export function SidebarContenuto({
   onNavigate,
   ruolo,
+  logoAllegatoId,
 }: {
   onNavigate?: () => void;
   /** Ruolo dell'utente corrente: nasconde le voci riservate ad altri ruoli (§6). */
   ruolo?: string;
+  logoAllegatoId?: string | null;
 }) {
   const pathname = usePathname();
   const voci = vociNavigazione.filter((voce) => !voce.soloRuoli || !ruolo || voce.soloRuoli.includes(ruolo));
@@ -22,7 +24,16 @@ export function SidebarContenuto({
   return (
     <div className="flex h-full flex-col gap-4">
       <div className="flex items-center gap-2 px-2 py-1">
-        <Landmark className="size-6 shrink-0" />
+        {logoAllegatoId ? (
+          // eslint-disable-next-line @next/next/no-img-element -- rotta allegati generica, non un asset statico
+          <img
+            src={`/contabilita/allegati/${logoAllegatoId}`}
+            alt="Logo dell'associazione"
+            className="size-8 shrink-0 rounded object-contain"
+          />
+        ) : (
+          <Landmark className="size-6 shrink-0" />
+        )}
         <span className="font-semibold tracking-tight">F90GEST</span>
       </div>
       <nav className="flex flex-1 flex-col gap-1">

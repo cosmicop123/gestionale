@@ -22,8 +22,15 @@ adempimenti GDPR di un'associazione culturale italiana.
 > produzione per tutti i moduli previsti dalla specifica di progetto.**
 > Aggiunta fuori piano: generatore di un sito vetrina statico (info
 > associazione e corsi disponibili) con tre template pronti, scaricabile in
-> ZIP da Amministrazione → Sito pubblico. Vedi `CLAUDE.md` per lo stato di
-> dettaglio e le note di continuità di ogni milestone.
+> ZIP da Amministrazione → Sito pubblico. Aggiunte fuori piano successive:
+> logo dell'associazione (caricabile da Amministrazione, visibile in
+> sidebar, login, iscrizione pubblica e sito vetrina) con i colori dell'app
+> adattati alla palette del logo, numero tessera socio e numero tessera
+> ENAC nella scheda socio, e un sistema di modelli di documento con parti
+> variabili (`{{segnaposto}}`) in Documenti e protocollo, per generare
+> rapidamente lettere/moduli ricorrenti e salvarli in archivio. Vedi
+> `CLAUDE.md` per lo stato di dettaglio e le note di continuità di ogni
+> milestone.
 
 ## Requisiti
 

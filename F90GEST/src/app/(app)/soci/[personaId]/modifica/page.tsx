@@ -35,6 +35,8 @@ export default async function ModificaPersonaPage({
     residenzaProvincia: persona.residenzaProvincia ?? "",
     email: persona.email ?? "",
     telefono: persona.telefono ?? "",
+    numeroTesseraSocio: persona.numeroTesseraSocio ?? "",
+    numeroTesseraEnac: persona.numeroTesseraEnac ?? "",
     note: persona.note ?? "",
     genitore: guardian
       ? {

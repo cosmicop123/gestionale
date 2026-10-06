@@ -20,10 +20,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-svh w-full">
       <aside className="hidden w-64 shrink-0 border-r p-4 lg:block">
-        <SidebarContenuto ruolo={utente.ruolo} />
+        <SidebarContenuto ruolo={utente.ruolo} logoAllegatoId={associazione?.logoAllegatoId} />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <BarraSuperiore utente={{ email: utente.email, ruolo: utente.ruolo }} />
+        <BarraSuperiore utente={{ email: utente.email, ruolo: utente.ruolo }} logoAllegatoId={associazione?.logoAllegatoId} />
         <main className="flex-1 p-4 sm:p-6">{children}</main>
       </div>
     </div>

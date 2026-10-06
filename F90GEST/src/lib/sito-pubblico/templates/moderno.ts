@@ -39,6 +39,7 @@ export function generaHtmlModerno(dati: DatiSitoPubblico): string {
     padding: 3.5rem 1.5rem 3rem;
     text-align: center;
   }
+  header img { max-height: 90px; margin-bottom: 1rem; }
   header h1 { margin: 0 0 .5rem; font-size: 2.4rem; font-weight: 700; }
   header p { margin: 0; opacity: .9; }
   main { max-width: 960px; margin: -1.5rem auto 0; padding: 0 1.5rem 3rem; }
@@ -90,6 +91,7 @@ export function generaHtmlModerno(dati: DatiSitoPubblico): string {
 </head>
 <body>
   <header>
+    ${dati.logoDataUri ? `<img src="${dati.logoDataUri}" alt="Logo ${escapeHtml(dati.denominazione)}">` : ""}
     <h1>${escapeHtml(dati.denominazione)}</h1>
     <p>${escapeHtml(dati.indirizzo)}</p>
   </header>

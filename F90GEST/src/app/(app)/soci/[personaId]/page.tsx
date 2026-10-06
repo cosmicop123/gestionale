@@ -125,6 +125,10 @@ export default async function SchedaSocioPage({
               <dd>{persona.email ?? "—"}</dd>
               <dt className="text-muted-foreground">Telefono</dt>
               <dd>{persona.telefono ?? "—"}</dd>
+              <dt className="text-muted-foreground">Numero tessera socio</dt>
+              <dd>{persona.numeroTesseraSocio ?? "—"}</dd>
+              <dt className="text-muted-foreground">Numero tessera ENAC</dt>
+              <dd>{persona.numeroTesseraEnac ?? "—"}</dd>
             </dl>
 
             {guardianAttivo && (

@@ -13,7 +13,10 @@ disponibili.
 2. Al primo accesso ti verrà chiesto di **personalizzare i dati
    dell'associazione**: denominazione, codice fiscale, sede legale,
    contatti. Puoi lasciare vuoti i campi facoltativi e completarli in
-   seguito da **Amministrazione → Dati ente**.
+   seguito da **Amministrazione → Dati ente**, dove puoi anche **caricare
+   il logo dell'associazione** (PNG, JPEG, SVG o WebP): una volta caricato
+   comparirà nel menu laterale, nella pagina di accesso, nella pagina
+   pubblica di iscrizione e nel sito vetrina generato.
 3. Una volta salvati i dati, entri nella Dashboard.
 4. Per **cambiare la tua password** o creare accessi per altre persone
    (segreteria, tesoriere, docenti): vai su **Amministrazione → Utenti**.
@@ -42,7 +45,11 @@ Da **Soci e tesseramenti** puoi:
 - **Creare una nuova persona**: nome, cognome, codice fiscale (verificato
   automaticamente), data di nascita, contatti. Se la persona è minorenne,
   il modulo chiede automaticamente i dati di un genitore o tutore: è
-  obbligatorio compilarli.
+  obbligatorio compilarli. Nella sezione "Tessere" del modulo puoi
+  registrare, se presenti, il **numero di tessera socio** (il numero
+  fisico della tessera associativa, indipendente dal numero di libro
+  soci) e il **numero di tessera ENAC** — entrambi facoltativi e
+  modificabili in qualunque momento dalla scheda della persona.
 - **Avviare una domanda di ammissione a socio** dalla scheda della persona,
   indicando la categoria proposta (ordinario, sostenitore, onorario,
   junior).
@@ -249,6 +256,18 @@ Da **Documenti e protocollo**:
   (mittente/destinatario, oggetto, mezzo di trasmissione) con un allegato
   facoltativo; ogni protocollo riceve un numero progressivo annuale per
   tipo (entrata/uscita), come un registro di protocollo tradizionale.
+- **Modelli di documento**: crea un modello di lettera/modulo ricorrente
+  scrivendone il testo e segnando le parti che cambiano ogni volta con un
+  segnaposto tra doppie parentesi, ad esempio `{{nome_destinatario}}` o
+  `{{data_assemblea}}`. Il gestionale riconosce automaticamente ogni
+  segnaposto usato e lo mostra come promemoria (etichetta) nell'elenco dei
+  modelli. Quando devi generare un documento da un modello, clicca "Genera
+  documento": ti verranno chiesti solo i valori dei segnaposto di quel
+  modello, poi puoi scegliere se **scaricare subito il PDF** (senza
+  salvarlo da nessuna parte) oppure **generarlo e salvarlo in archivio**
+  (compare tra i "Documenti", con la categoria che scegli). Utile per
+  lettere di convocazione, moduli di richiesta, comunicazioni standard che
+  ripeti spesso cambiando solo nome, data o pochi altri dettagli.
 
 ## Comunicazioni
 

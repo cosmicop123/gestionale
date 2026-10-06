@@ -20,9 +20,10 @@ import { etichettaRuolo } from "@/lib/validazioni/utente";
 
 type ProprietaBarraSuperiore = {
   utente: { email: string; ruolo: string };
+  logoAllegatoId?: string | null;
 };
 
-export function BarraSuperiore({ utente }: ProprietaBarraSuperiore) {
+export function BarraSuperiore({ utente, logoAllegatoId }: ProprietaBarraSuperiore) {
   const [menuMobileAperto, setMenuMobileAperto] = useState(false);
 
   return (
@@ -41,7 +42,11 @@ export function BarraSuperiore({ utente }: ProprietaBarraSuperiore) {
           <SheetHeader className="sr-only">
             <SheetTitle>Navigazione</SheetTitle>
           </SheetHeader>
-          <SidebarContenuto onNavigate={() => setMenuMobileAperto(false)} ruolo={utente.ruolo} />
+          <SidebarContenuto
+            onNavigate={() => setMenuMobileAperto(false)}
+            ruolo={utente.ruolo}
+            logoAllegatoId={logoAllegatoId}
+          />
         </SheetContent>
       </Sheet>
 

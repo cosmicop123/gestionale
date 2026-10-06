@@ -73,7 +73,7 @@ export default async function AmministrazionePage() {
           <TabsTrigger value="registro-controllo">Registro di controllo</TabsTrigger>
         </TabsList>
         <TabsContent value="ente" className="max-w-2xl">
-          <TabEnte valoriIniziali={valoriIniziali} />
+          <TabEnte valoriIniziali={valoriIniziali} logoAllegatoId={associazione.logoAllegatoId} />
         </TabsContent>
         <TabsContent value="anni-sociali">
           <TabAnniSociali anniSociali={anniSociali} />

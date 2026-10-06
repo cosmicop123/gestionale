@@ -25,6 +25,8 @@ export const schemaPersona = z
     residenzaProvincia: z.string().length(2).toUpperCase().optional().or(z.literal("")),
     email: z.string().email("Email non valida.").optional().or(z.literal("")),
     telefono: z.string().optional().or(z.literal("")),
+    numeroTesseraSocio: z.string().optional().or(z.literal("")),
+    numeroTesseraEnac: z.string().optional().or(z.literal("")),
     note: z.string().optional().or(z.literal("")),
     // Presente solo se dataNascita indica un minorenne: vedi §7.5.
     genitore: schemaGenitore.optional(),

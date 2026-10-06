@@ -37,6 +37,7 @@ export function generaHtmlClassico(dati: DatiSitoPubblico): string {
     padding: 3rem 1.5rem;
     text-align: center;
   }
+  header img { max-height: 90px; margin-bottom: 1rem; }
   header h1 { margin: 0 0 .5rem; font-size: 2.2rem; font-weight: normal; letter-spacing: .03em; }
   header p { margin: 0; opacity: .85; }
   main { max-width: 780px; margin: 0 auto; padding: 2.5rem 1.5rem; }
@@ -76,6 +77,7 @@ export function generaHtmlClassico(dati: DatiSitoPubblico): string {
 </head>
 <body>
   <header>
+    ${dati.logoDataUri ? `<img src="${dati.logoDataUri}" alt="Logo ${escapeHtml(dati.denominazione)}">` : ""}
     <h1>${escapeHtml(dati.denominazione)}</h1>
     <p>${escapeHtml(dati.indirizzo)}</p>
   </header>

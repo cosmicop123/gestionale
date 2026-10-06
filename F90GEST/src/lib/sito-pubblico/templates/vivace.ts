@@ -42,6 +42,7 @@ export function generaHtmlVivace(dati: DatiSitoPubblico): string {
     border-bottom-left-radius: 40px;
     border-bottom-right-radius: 40px;
   }
+  header img { max-height: 90px; margin-bottom: 1rem; }
   header h1 { margin: 0 0 .5rem; font-size: 2.5rem; }
   header p { margin: 0; opacity: .95; }
   main { max-width: 860px; margin: 0 auto; padding: 2.5rem 1.5rem; }
@@ -78,6 +79,7 @@ export function generaHtmlVivace(dati: DatiSitoPubblico): string {
 </head>
 <body>
   <header>
+    ${dati.logoDataUri ? `<img src="${dati.logoDataUri}" alt="Logo ${escapeHtml(dati.denominazione)}">` : ""}
     <h1>${escapeHtml(dati.denominazione)}</h1>
     <p>${escapeHtml(dati.indirizzo)}</p>
   </header>

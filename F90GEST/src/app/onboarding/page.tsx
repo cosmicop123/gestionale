@@ -42,6 +42,7 @@ export default async function OnboardingPage() {
         ? ""
         : (associazione.regimeFiscale ?? ""),
     piePaginaRicevute: associazione.piePaginaRicevute ?? "",
+    firmaPresidenteTesto: associazione.firmaPresidenteTesto ?? "",
   };
 
   return (

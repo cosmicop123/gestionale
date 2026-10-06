@@ -53,7 +53,8 @@ model Associazione {
   numeroRunts            String?
   regimeFiscale          String? // solo descrittivo, nessuna logica fiscale automatica
   piePaginaRicevute      String? // testo normativo configurabile stampato sulle ricevute
-  firmaPresidenteAllegatoId String?
+  firmaPresidenteAllegatoId String? // immagine della firma, stampata sulle ricevute
+  firmaPresidenteTesto      String? // es. "Il Presidente Mario Rossi", stampato sotto la firma
   configurazioneCompletata Boolean @default(false) // false finché non si passa dal wizard di primo avvio
 
   createdAt   DateTime @default(now())

@@ -5,8 +5,15 @@ import { prisma } from "@/lib/prisma";
 import { prossimoNumero } from "@/lib/numeratore";
 import { calcolaBollo } from "@/lib/contabilita/bollo";
 import { ottieniParametriContabilita } from "@/lib/parametri";
-import { salvaAllegato } from "@/lib/storage";
+import { salvaAllegato, leggiAllegato } from "@/lib/storage";
 import { RicevutaDocument } from "./ricevuta-pdf";
+
+async function datiUriAllegato(allegatoId: string | null | undefined): Promise<string | null> {
+  if (!allegatoId) return null;
+  const allegato = await leggiAllegato(allegatoId);
+  if (!allegato) return null;
+  return `data:${allegato.mimeType};base64,${allegato.buffer.toString("base64")}`;
+}
 
 /**
  * Crea la riga Ricevuta dentro la transazione del chiamante (numerazione
@@ -72,12 +79,19 @@ export async function generaEAllegaPdfRicevuta(ricevutaId: string): Promise<void
     include: { intestatario: true },
   });
   const associazione = await prisma.associazione.findFirst();
+  const [logoDataUri, firmaDataUri] = await Promise.all([
+    datiUriAllegato(associazione?.logoAllegatoId),
+    datiUriAllegato(associazione?.firmaPresidenteAllegatoId),
+  ]);
 
   const buffer = await renderToBuffer(
     RicevutaDocument({
       denominazioneEnte: associazione?.denominazione ?? "Associazione",
       codiceFiscaleEnte: associazione?.codiceFiscale ?? "",
       sedeEnte: [associazione?.sedeLegaleVia, associazione?.sedeLegaleComune].filter(Boolean).join(", "),
+      logoDataUri,
+      firmaDataUri,
+      firmaTesto: associazione?.firmaPresidenteTesto ?? null,
       numero: ricevuta.numero,
       annoSolare: ricevuta.annoSolare,
       data: new Intl.DateTimeFormat("it-IT").format(ricevuta.data),

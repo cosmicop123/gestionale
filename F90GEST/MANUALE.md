@@ -16,7 +16,12 @@ disponibili.
    seguito da **Amministrazione → Dati ente**, dove puoi anche **caricare
    il logo dell'associazione** (PNG, JPEG, SVG o WebP): una volta caricato
    comparirà nel menu laterale, nella pagina di accesso, nella pagina
-   pubblica di iscrizione e nel sito vetrina generato.
+   pubblica di iscrizione, nel sito vetrina generato e sulle ricevute PDF.
+   Nella stessa pagina puoi caricare anche la **firma del Presidente**
+   (un'immagine, idealmente con sfondo trasparente) e il testo da mostrare
+   sotto di essa (es. "Il Presidente Mario Rossi"): compariranno insieme in
+   calce a tutte le ricevute emesse da quel momento in poi — le ricevute
+   già emesse non cambiano aspetto retroattivamente.
 3. Una volta salvati i dati, entri nella Dashboard.
 4. Per **cambiare la tua password** o creare accessi per altre persone
    (segreteria, tesoriere, docenti): vai su **Amministrazione → Utenti**.

@@ -38,6 +38,7 @@ export const schemaEnte = z.object({
   numeroRunts: z.string().optional().or(z.literal("")),
   regimeFiscale: z.string().optional().or(z.literal("")),
   piePaginaRicevute: z.string().optional().or(z.literal("")),
+  firmaPresidenteTesto: z.string().optional().or(z.literal("")),
 });
 
 export type DatiEnte = z.infer<typeof schemaEnte>;

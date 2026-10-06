@@ -199,6 +199,18 @@ export function EnteForm({
           <Label htmlFor="piePaginaRicevute">Testo normativo a piè di pagina delle ricevute</Label>
           <Textarea id="piePaginaRicevute" rows={3} {...register("piePaginaRicevute")} />
         </div>
+        <div className="space-y-2">
+          <Label htmlFor="firmaPresidenteTesto">Testo sotto la firma nelle ricevute</Label>
+          <Input
+            id="firmaPresidenteTesto"
+            placeholder="es. Il Presidente Mario Rossi"
+            {...register("firmaPresidenteTesto")}
+          />
+          <p className="text-xs text-muted-foreground">
+            Mostrato sotto l&apos;immagine della firma (caricabile qui sopra). Se lasciato vuoto, le
+            ricevute mostrano &quot;Il Presidente / Il Tesoriere&quot;.
+          </p>
+        </div>
       </section>
 
       <Button type="submit" disabled={inAttesa}>

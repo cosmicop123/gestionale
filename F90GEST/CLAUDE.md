@@ -422,6 +422,68 @@ sia **ricevere** (IMAP, nuovo) posta.
   analoghi di affidabilità della suite) — verificato manualmente invece,
   puntando una casella reale durante lo sviluppo.
 
+### Nota fuori milestone: logo e firma del Presidente sulle ricevute
+
+Su richiesta esplicita dell'utente, a completamento della stessa richiesta
+fuori piano precedente: il logo e la firma del Presidente (immagine +
+testo, es. "Il Presidente Mario Rossi") ora compaiono sulle ricevute PDF.
+
+- **`Associazione.firmaPresidenteAllegatoId` esisteva già nello schema fin
+  da M0, ma non era mai stato collegato a nulla** — campo "orfano" scoperto
+  solo ora cercando dove mettere questo dato, invece di aggiungerne uno
+  nuovo. `firmaPresidenteTesto` (nuovo) è l'unica colonna aggiunta
+  davvero da questa milestone.
+- **Perché un testo libero e non `CaricaSociale`**: lo schema ha già un
+  modello `CaricaSociale` (storico di chi ha ricoperto quale carica, con
+  date di mandato) che sarebbe la fonte "corretta" per sapere chi è
+  l'attuale Presidente — ma non è mai stato collegato a nessuna UI in
+  nessuna milestone (nessun CRUD, modello completamente inutilizzato).
+  Costruire quella UI per ricavare automaticamente il nome da stampare in
+  calce sarebbe stata una funzionalità a sé, ben più ampia di quanto
+  chiesto ora. Scelta deliberata: un campo di testo libero
+  (`firmaPresidenteTesto`, stesso pattern già usato per
+  `piePaginaRicevute`) che l'amministratore aggiorna a mano quando cambia
+  il Presidente — nessuna nuova gestione delle cariche sociali, resta un
+  miglioramento possibile ma esplicitamente fuori scope qui.
+- **L'immagine della firma NON è mai stata committata nel codice**: è un
+  dato personale di una persona reale, caricato dall'amministratore da
+  Amministrazione → Dati ente (stesso meccanismo upload già usato per il
+  logo, `caricaFirmaPresidente` in `src/lib/ente/actions.ts`, duplicato da
+  `caricaLogo` invece che astratto: validazione e punto d'uso diversi).
+  Per questo un aggiornamento del codice (es. l'installer Windows) non
+  porta mai con sé la firma già caricata: resta nel database
+  dell'installazione esistente, che l'installer non tocca (vedi nota sopra
+  su `genera-env.js`) — e viceversa, una nuova installazione richiede di
+  ricaricarla una volta dall'interfaccia.
+- **Il logo è stato aggiunto ai PDF solo per le ricevute**, non per
+  tessere/attestati/verbale/rendiconto: la nota di continuità della
+  milestone precedente aveva esplicitamente rimandato "logo nei PDF" nel
+  suo insieme; qui si è risposto solo alla richiesta puntuale sulla
+  ricevuta. Lo stesso pattern (`leggiAllegato` → data URI → prop
+  `logoDataUri`/`<Image>` di `@react-pdf/renderer`) si può riapplicare
+  identico agli altri PDF se richiesto in futuro.
+- **Le ricevute già emesse non cambiano aspetto retroattivamente**: il PDF
+  di una ricevuta (append-only per specifica, §7.4) viene generato una
+  sola volta al momento dell'emissione e poi solo letto, mai rigenerato
+  (`generaEAllegaPdfRicevuta`, invariato in questa milestone) — coerente
+  con l'invariante già documentata in M3. Solo le ricevute emesse *dopo*
+  aver caricato logo/firma le mostreranno.
+- **`@react-pdf/renderer` `<Image>` non accetta la prop `alt`** (non è
+  HTML, è un primitivo del renderer PDF): il warning ESLint
+  `jsx-a11y/alt-text` va disattivato riga per riga con un commento,
+  pattern già presente in `tessera-pdf.tsx` per il QR code, replicato qui
+  — non un nuovo problema, lo stesso falso positivo riscontrato altrove.
+- **Verificato visivamente, non solo con build/lint/test**: per un
+  cambiamento di layout grafico, l'assenza di errori di compilazione non
+  basta a sapere se il risultato è quello voluto. Generato un PDF di prova
+  reale (persona → quota → pagamento → ricevuta, via un test e2e
+  temporaneo con logo e firma caricati) e convertito in PNG con PyMuPDF
+  (`pip install pymupdf`, nessun tool CLI poppler disponibile
+  nell'ambiente) per un controllo visivo diretto prima di considerare la
+  modifica completa — il test temporaneo non è stato mantenuto nella
+  suite (serviva solo per l'ispezione visiva una tantum), diverso quindi
+  dal pattern dei test e2e permanenti del resto del progetto.
+
 ### Note di continuità per M10 (milestone finale — utile per lavoro futuro)
 
 - **Nessuna migrazione Prisma necessaria**: M10 non introduce nuovi modelli,

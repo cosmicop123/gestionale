@@ -71,6 +71,7 @@ export default async function AmministrazionePage() {
     numeroRunts: associazione.numeroRunts ?? "",
     regimeFiscale: associazione.regimeFiscale ?? "",
     piePaginaRicevute: associazione.piePaginaRicevute ?? "",
+    firmaPresidenteTesto: associazione.firmaPresidenteTesto ?? "",
   };
 
   return (
@@ -94,7 +95,11 @@ export default async function AmministrazionePage() {
           <TabsTrigger value="registro-controllo">Registro di controllo</TabsTrigger>
         </TabsList>
         <TabsContent value="ente" className="max-w-2xl">
-          <TabEnte valoriIniziali={valoriIniziali} logoAllegatoId={associazione.logoAllegatoId} />
+          <TabEnte
+            valoriIniziali={valoriIniziali}
+            logoAllegatoId={associazione.logoAllegatoId}
+            firmaPresidenteAllegatoId={associazione.firmaPresidenteAllegatoId}
+          />
         </TabsContent>
         <TabsContent value="anni-sociali">
           <TabAnniSociali anniSociali={anniSociali} />

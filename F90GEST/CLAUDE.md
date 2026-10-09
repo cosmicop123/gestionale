@@ -179,6 +179,37 @@ con Docker.
   conservarli per un'eventuale reinstallazione futura — stesso principio
   di conferma per le azioni distruttive già seguito nel resto dell'app
   (es. il ripristino da backup di M10).
+- **Secondo eseguibile separato per gli aggiornamenti**
+  (`aggiornamento.nsi` → `F90GEST-Aggiornamento-Windows.exe`), aggiunto su
+  richiesta esplicita dell'utente dopo le prime consegne: rieseguire
+  `F90GEST-Setup-Windows.exe` ad ogni piccola modifica funzionava (il
+  download di Node.js non sovrascrive dati esistenti, `genera-env.js` è
+  idempotente), ma era lento e sprecava banda — riscaricava da zero il
+  runtime Node.js (~35 MB, il passo più pesante) anche quando non serviva.
+  `build.sh` ora produce entrambi gli eseguibili dalla stessa snapshot
+  `git archive` in staging, per non duplicare quel passaggio. Differenze
+  dell'aggiornamento rispetto all'installer completo:
+  - **non scarica/estrae il runtime Node.js**: lo dà per scontato già
+    presente in `$INSTDIR\node` e si ferma con un messaggio chiaro
+    (`IfFileExists`) se non lo trova, indirizzando l'utente a eseguire
+    prima l'installer completo — non prova mai a "indovinare" o reinstallare
+    da zero;
+  - **ferma F90GEST prima di sovrascrivere il codice**, per evitare di
+    aggiornare i file mentre il processo Node è ancora in esecuzione (rischio
+    di file bloccati su Windows, o di un server che serve codice a metà
+    aggiornato): `Ferma-silenzioso.bat`, duplicato di `Ferma F90GEST.bat`
+    **senza** il comando `pause` finale — necessario perché
+    `nsExec::ExecToLog` lancia il comando e si aspetta che termini da solo;
+    il batch originale (pensato per un doppio clic umano) resterebbe in
+    attesa di un invio da tastiera che non arriverà mai, bloccando
+    l'aggiornamento a tempo indeterminato;
+  - **non richiede una cartella "pulita"**: la pagina di scelta cartella
+    nell'installer completo presuppone un'installazione nuova; qui si
+    aspetta esplicitamente di trovare quella esistente.
+  - Il resto (copia codice, `genera-env.js`, `npm ci`, `prisma migrate
+    deploy`, `prisma db seed`, `npm run build`) è identico all'installer
+    completo: stesso principio generale di riuso già seguito altrove nel
+    progetto, non una pipeline di aggiornamento diversa reinventata da zero.
 
 ### Nota fuori milestone: generatore di sito pubblico con template
 

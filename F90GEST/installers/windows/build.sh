@@ -1,11 +1,15 @@
 #!/bin/sh
-# Costruisce l'installer Windows di F90GEST (Setup.exe) da un ambiente
-# Linux: prende uno snapshot pulito del codice dal branch corrente (git
-# archive: rispetta .gitignore, quindi mai node_modules/.next/db/storage
-# locali) e compila tutto con NSIS (makensis). Il runtime Node.js NON
-# viene incluso qui: l'installer lo scarica da nodejs.org al momento
-# dell'installazione (vedi installer.nsi), per tenere questo eseguibile
-# piccolo e facile da distribuire.
+# Costruisce gli installer Windows di F90GEST da un ambiente Linux: prende
+# uno snapshot pulito del codice dal branch corrente (git archive: rispetta
+# .gitignore, quindi mai node_modules/.next/db/storage locali) e compila
+# con NSIS (makensis) due eseguibili dalla stessa staging:
+# - F90GEST-Setup-Windows.exe: installazione completa (scarica anche il
+#   runtime Node.js), da usare solo la prima volta;
+# - F90GEST-Aggiornamento-Windows.exe: aggiorna un'installazione gia'
+#   esistente (riusa il runtime Node.js gia' installato, niente scelta
+#   guidata di una cartella vuota), da usare per tutte le versioni
+#   successive alla prima — molto piu' veloce, non ridownloada nulla di
+#   pesante.
 #
 # Richiede: makensis (pacchetto apt "nsis"), git.
 # Uso: ./build.sh [commit-o-branch]
@@ -30,10 +34,18 @@ git -C "$QUI/../.." archive --format=tar "$GIT_REF" | tar -x -C "$STAGING/app/"
 echo "== Copia script di avvio =="
 cp "$QUI/Avvia F90GEST.bat" "$STAGING/"
 cp "$QUI/Ferma F90GEST.bat" "$STAGING/"
+cp "$QUI/Ferma-silenzioso.bat" "$STAGING/"
 cp "$QUI/installer.nsi" "$STAGING/"
+cp "$QUI/aggiornamento.nsi" "$STAGING/"
 
-echo "== Compilazione con NSIS =="
+echo "== Compilazione installer completo (Setup) =="
 ( cd "$STAGING" && makensis installer.nsi )
 mv "$STAGING/F90GEST-Setup-Windows.exe" "$QUI/F90GEST-Setup-Windows.exe"
 
-echo "== Fatto: $QUI/F90GEST-Setup-Windows.exe =="
+echo "== Compilazione aggiornamento =="
+( cd "$STAGING" && makensis aggiornamento.nsi )
+mv "$STAGING/F90GEST-Aggiornamento-Windows.exe" "$QUI/F90GEST-Aggiornamento-Windows.exe"
+
+echo "== Fatto =="
+echo "  $QUI/F90GEST-Setup-Windows.exe (prima installazione)"
+echo "  $QUI/F90GEST-Aggiornamento-Windows.exe (aggiornamenti successivi)"

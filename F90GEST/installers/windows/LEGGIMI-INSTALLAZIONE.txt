@@ -1,6 +1,24 @@
 F90GEST — Installer per Windows (versione di prova)
 =====================================================
 
+DUE FILE DIVERSI: QUALE USARE
+-------------------------------
+- F90GEST-Setup-Windows.exe: usalo SOLO la prima volta (installazione
+  completa, scarica anche il runtime Node.js da internet — qualche
+  minuto).
+- F90GEST-Aggiornamento-Windows.exe: usalo per TUTTI gli aggiornamenti
+  successivi, quando ti consegno una nuova versione con correzioni o
+  nuove funzionalità. Riusa il runtime Node.js già installato (non lo
+  riscarica), quindi è molto più veloce, e NON tocca mai i tuoi dati
+  (soci, ricevute, documenti caricati) — aggiorna solo il codice
+  dell'applicazione. Se lo esegui senza aver prima installato con Setup,
+  ti avvisa e si ferma senza fare nulla.
+
+Il resto di questo documento riguarda l'installazione completa
+(Setup.exe, la prima volta); l'aggiornamento funziona allo stesso modo
+(stessa schermata "Windows ha protetto il PC" possibile, stessa cartella
+di destinazione) ma più rapido.
+
 COSA FA QUESTO INSTALLER
 -------------------------
 Installa F90GEST interamente nel tuo profilo utente (non serve essere

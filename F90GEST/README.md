@@ -89,8 +89,11 @@ container aggiornato.
 
 Per un'associazione che preferisce far girare F90GEST su un PC Windows
 dell'ufficio invece che su un server con Docker, `installers/windows/`
-contiene un installer (`F90GEST-Setup-Windows.exe`, generato da
-`build.sh`, non versionato in git) che:
+contiene due eseguibili (entrambi generati da `build.sh`, non versionati
+in git): `F90GEST-Setup-Windows.exe` per la prima installazione, e
+`F90GEST-Aggiornamento-Windows.exe` per tutti gli aggiornamenti
+successivi (molto più veloce: non riscarica il runtime Node.js e non
+tocca mai database/allegati esistenti). Il primo:
 
 - installa tutto sotto il profilo utente (`%LOCALAPPDATA%\F90GEST`), senza
   bisogno di diritti di amministratore (l'installer stesso pesa solo

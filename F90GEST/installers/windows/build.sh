@@ -35,6 +35,7 @@ echo "== Copia script di avvio =="
 cp "$QUI/Avvia F90GEST.bat" "$STAGING/"
 cp "$QUI/Ferma F90GEST.bat" "$STAGING/"
 cp "$QUI/Ferma-silenzioso.bat" "$STAGING/"
+cp "$QUI/Azzera-dati.bat" "$STAGING/"
 cp "$QUI/installer.nsi" "$STAGING/"
 cp "$QUI/aggiornamento.nsi" "$STAGING/"
 

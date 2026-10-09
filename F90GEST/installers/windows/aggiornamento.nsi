@@ -60,6 +60,9 @@ Section "Aggiorna F90GEST" SEC01
   SetOutPath "$INSTDIR"
   File "Avvia F90GEST.bat"
   File "Ferma F90GEST.bat"
+  File "Azzera-dati.bat"
+  CreateDirectory "$SMPROGRAMS\${APP_NAME}"
+  CreateShortcut "$SMPROGRAMS\${APP_NAME}\Azzera tutti i dati F90GEST.lnk" "$INSTDIR\Azzera-dati.bat" "" "$INSTDIR\Azzera-dati.bat" 0
 
   DetailPrint "Completo la configurazione (.env) con eventuali nuove variabili introdotte..."
   nsExec::ExecToLog '"$INSTDIR\node\node.exe" "$INSTDIR\app\scripts\genera-env.js"'

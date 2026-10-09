@@ -52,6 +52,7 @@ Section "Installa F90GEST" SEC01
   SetOutPath "$INSTDIR"
   File "Avvia F90GEST.bat"
   File "Ferma F90GEST.bat"
+  File "Azzera-dati.bat"
 
   DetailPrint "Scarico il runtime Node.js v${NODE_VERSION} da nodejs.org: puo' richiedere qualche minuto..."
   ; [Net.ServicePointManager]::SecurityProtocol forza TLS 1.2: alcune
@@ -120,6 +121,7 @@ Section "Installa F90GEST" SEC01
   CreateDirectory "$SMPROGRAMS\${APP_NAME}"
   CreateShortcut "$SMPROGRAMS\${APP_NAME}\Avvia F90GEST.lnk" "$INSTDIR\Avvia F90GEST.bat" "" "$INSTDIR\Avvia F90GEST.bat" 0
   CreateShortcut "$SMPROGRAMS\${APP_NAME}\Ferma F90GEST.lnk" "$INSTDIR\Ferma F90GEST.bat" "" "$INSTDIR\Ferma F90GEST.bat" 0
+  CreateShortcut "$SMPROGRAMS\${APP_NAME}\Azzera tutti i dati F90GEST.lnk" "$INSTDIR\Azzera-dati.bat" "" "$INSTDIR\Azzera-dati.bat" 0
   CreateShortcut "$SMPROGRAMS\${APP_NAME}\Disinstalla F90GEST.lnk" "$INSTDIR\Uninstall.exe"
   CreateShortcut "$DESKTOP\F90GEST.lnk" "$INSTDIR\Avvia F90GEST.bat" "" "$INSTDIR\Avvia F90GEST.bat" 0
 

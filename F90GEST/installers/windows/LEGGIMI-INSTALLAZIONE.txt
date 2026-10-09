@@ -1,7 +1,7 @@
 F90GEST — Installer per Windows (versione di prova)
 =====================================================
 
-DUE FILE DIVERSI: QUALE USARE
+TRE FILE DIVERSI: QUALE USARE
 -------------------------------
 - F90GEST-Setup-Windows.exe: usalo SOLO la prima volta (installazione
   completa, scarica anche il runtime Node.js da internet — qualche
@@ -13,6 +13,16 @@ DUE FILE DIVERSI: QUALE USARE
   (soci, ricevute, documenti caricati) — aggiorna solo il codice
   dell'applicazione. Se lo esegui senza aver prima installato con Setup,
   ti avvisa e si ferma senza fare nulla.
+- Azzera-dati.bat: CANCELLA TUTTI i dati del gestionale (soci, ricevute,
+  contabilità, tutto) e lo riporta allo stato di primo avvio. Si trova
+  anche nel menu Start, cartella F90GEST, come "Azzera tutti i dati
+  F90GEST" (installato/aggiornato automaticamente dai due file sopra; se
+  la tua installazione non ce l'ha ancora, esegui prima
+  F90GEST-Aggiornamento-Windows.exe). Chiede conferma digitando una
+  parola esatta prima di procedere, e salva automaticamente un backup di
+  sicurezza (.zip) accanto a sé stesso prima di cancellare qualunque cosa
+  — ma usalo solo se sei sicuro: non è pensato per l'uso quotidiano, solo
+  per ripartire da zero (es. dopo aver provato l'app con dati di prova).
 
 Il resto di questo documento riguarda l'installazione completa
 (Setup.exe, la prima volta); l'aggiornamento funziona allo stesso modo

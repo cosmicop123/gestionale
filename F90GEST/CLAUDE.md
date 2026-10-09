@@ -210,6 +210,44 @@ con Docker.
     deploy`, `prisma db seed`, `npm run build`) è identico all'installer
     completo: stesso principio generale di riuso già seguito altrove nel
     progetto, non una pipeline di aggiornamento diversa reinventata da zero.
+- **`Azzera-dati.bat`**: azzeramento completo dei dati (soci, contabilità,
+  documenti, tutto), richiesto esplicitamente dall'utente per poter
+  ripartire da zero dopo aver usato l'installazione per fare delle prove.
+  Scelto **un `.bat` semplice**, non un terzo eseguibile NSIS come gli
+  altri due: a differenza di installazione/aggiornamento (dove NSIS dà
+  pagine guidate e gestione errori integrata, e vale la complessità
+  aggiuntiva), qui serve solo eseguire comandi in sequenza con una
+  conferma testuale — scrivere questa stessa logica con `nsDialogs` (NSIS
+  non ha un prompt di testo nativo) sarebbe stata complessità non
+  giustificata per un'azione distruttiva che, proprio perché distruttiva,
+  conviene mantenere la più semplice e ispezionabile possibile (un .bat
+  si legge riga per riga anche senza conoscere NSIS).
+  - **Backup di sicurezza automatico prima di azzerare, sempre**: stesso
+    principio già seguito dal ripristino da backup di M10 ("prima di
+    sovrascrivere, salva comunque lo stato attuale") — qui realizzato con
+    `Compress-Archive` di PowerShell (stesso approccio a riga di comando
+    già usato per `Expand-Archive` nell'installer completo, nessuna nuova
+    dipendenza). **Fail-closed**: se il backup fallisce per qualunque
+    motivo, lo script si ferma subito senza azzerare nulla, invece di
+    procedere "a rischio" — un'azione irreversibile non deve mai dipendere
+    dal buonesito silenzioso di un passaggio di sicurezza.
+  - **`prisma migrate reset --force`** (non una cancellazione manuale del
+    file del database): droppa e ricrea il database riapplicando tutte le
+    migrazioni da zero, poi esegue automaticamente il seed configurato in
+    `prisma.config.ts` (`migrations.seed`) — risultato: l'utente
+    amministratore e i dati minimi placeholder tornano esattamente come al
+    primo avvio, senza bisogno di duplicare quella logica a mano nello
+    script. `--force` salta la conferma interattiva che Prisma farebbe
+    altrimenti (ridondante: la conferma la fa già lo script).
+  - **Non un semplice collegamento desktop**: aggiunto solo al menu Start
+    (`CreateShortcut` in `installer.nsi`/`aggiornamento.nsi`, mai sul
+    Desktop come "Avvia F90GEST") — un'azione che cancella tutti i dati
+    dell'associazione non deve essere a un doppio clic di distanza dal
+    desktop.
+  - Installato/aggiornato automaticamente da entrambi gli altri due
+    eseguibili (stesso `cp` in `build.sh`), così resta sempre presente e
+    aggiornato per chi ha già installato o aggiornato F90GEST, senza dover
+    distribuire un quarto file a parte.
 
 ### Nota fuori milestone: generatore di sito pubblico con template
 

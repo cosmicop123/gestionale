@@ -292,6 +292,22 @@ con Docker.
     essere ristretto da policy aziendali in modi che `-ExecutionPolicy
     Bypass` non sempre supera, mentre i binari di sistema in System32
     quasi sempre restano eseguibili.
+- **Secondo utente amministratore "di recupero" nel seed**
+  (`prisma/seed.ts`, `ADMIN_RECUPERO_EMAIL`/`ADMIN_RECUPERO_PASSWORD_INIZIALE`):
+  l'associazione aveva cambiato la password dell'amministratore iniziale
+  (buona pratica) ma l'aveva poi smarrita, restando bloccata fuori dal
+  gestionale già in uso con dati reali — `Azzera-dati.bat` avrebbe
+  risolto l'accesso ma cancellando tutto, sproporzionato per un semplice
+  recupero password. Aggiunto un secondo utente amministratore con lo
+  stesso meccanismo idempotente già usato per quello iniziale (`findUnique`
+  per email prima di creare), così **l'aggiornamento normale
+  (`F90GEST-Aggiornamento-Windows.exe`, che già esegue `prisma db seed`
+  dopo `prisma migrate deploy`) lo crea senza toccare nessun dato
+  esistente** — non serve azzerare nulla per recuperare un accesso perso.
+  **Nota di sicurezza esplicita**: questa password è nel codice sorgente
+  e nella cronologia git, quindi non è davvero segreta — comunicato
+  all'utente di cambiarla subito dopo il primo accesso, stesso principio
+  già valido per `ADMIN_PASSWORD_INIZIALE`.
 
 ### Nota fuori milestone: generatore di sito pubblico con template
 

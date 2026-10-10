@@ -14,6 +14,14 @@ const prisma = new PrismaClient({ adapter });
 const ADMIN_EMAIL = "admin@example.org";
 const ADMIN_PASSWORD_INIZIALE = "CambiaSubito!2026";
 
+// Utente amministratore aggiuntivo richiesto dall'associazione per
+// recuperare l'accesso dopo aver smarrito la password di quello iniziale.
+// NON una password segreta: è nel codice sorgente (e nella cronologia git),
+// quindi va cambiata subito dopo il primo accesso da Amministrazione →
+// Utenti — stesso principio già vale per ADMIN_PASSWORD_INIZIALE sopra.
+const ADMIN_RECUPERO_EMAIL = "info@frequenze90.it";
+const ADMIN_RECUPERO_PASSWORD_INIZIALE = "Smer@ld01";
+
 async function main() {
   const associazioneEsistente = await prisma.associazione.findFirst();
   if (!associazioneEsistente) {
@@ -64,6 +72,21 @@ async function main() {
     console.log("Creato utente amministratore iniziale:");
     console.log(`  email:    ${ADMIN_EMAIL}`);
     console.log(`  password: ${ADMIN_PASSWORD_INIZIALE}  (da cambiare subito al primo accesso)`);
+  }
+
+  const adminRecuperoEsistente = await prisma.utente.findUnique({ where: { email: ADMIN_RECUPERO_EMAIL } });
+  if (!adminRecuperoEsistente) {
+    const passwordHash = await argon2.hash(ADMIN_RECUPERO_PASSWORD_INIZIALE);
+    await prisma.utente.create({
+      data: {
+        email: ADMIN_RECUPERO_EMAIL,
+        passwordHash,
+        ruolo: "amministratore",
+      },
+    });
+    console.log("Creato utente amministratore di recupero:");
+    console.log(`  email:    ${ADMIN_RECUPERO_EMAIL}`);
+    console.log(`  password: ${ADMIN_RECUPERO_PASSWORD_INIZIALE}  (da cambiare subito al primo accesso)`);
   }
 
   // Parametri di base non hardcoded nel codice (§3.4 della specifica).

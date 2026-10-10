@@ -248,6 +248,50 @@ con Docker.
     eseguibili (stesso `cp` in `build.sh`), così resta sempre presente e
     aggiornato per chi ha già installato o aggiornato F90GEST, senza dover
     distribuire un quarto file a parte.
+  - **Bug reale riportato dall'utente al primo uso: "non ha portato
+    alcuna modifica al software"**. La prima versione creava il backup di
+    sicurezza con PowerShell (`Compress-Archive`, `-ExecutionPolicy
+    Bypass`) — ma lo script è fail-closed per design (se il backup
+    fallisce, si ferma SENZA azzerare nulla, per non eseguire mai
+    un'azione irreversibile senza una rete di sicurezza). Su un PC
+    Windows "normale" (profilo utente, nessuna policy particolare) gli
+    altri script (`Avvia F90GEST.bat`) già usano PowerShell per un
+    controllo TCP innocuo, ma **tollerano silenziosamente un suo
+    fallimento** (se il controllo fallisce, lo script prova comunque ad
+    avviare il server) — quindi il fatto che Avvia/Ferma "funzionassero"
+    non garantiva affatto che PowerShell funzionasse davvero sulla
+    macchina dell'utente, solo che un suo eventuale fallimento lì non
+    aveva conseguenze visibili. Qui invece sì: su un PC gestito da una
+    policy aziendale/IT (Group Policy, AppLocker, Constrained Language
+    Mode) che restringe l'esecuzione di script PowerShell, `-ExecutionPolicy
+    Bypass` da riga di comando può essere ignorato da una policy di
+    livello macchina — `Compress-Archive` fallisce, lo script si ferma
+    "correttamente" al passo di sicurezza, e dall'esterno sembra che "non
+    sia successo nulla", che è esattamente il sintomo riportato.
+    **Fix**: backup di sicurezza riscritto senza PowerShell, con
+    `robocopy` (binario di sistema firmato in System32, non soggetto a
+    policy di esecuzione script) copiando `prisma\data` e `storage` in una
+    cartella invece di uno zip — perde la comodità di un singolo file
+    compresso ma elimina la dipendenza più fragile dell'intero script.
+    **Attenzione al codice di uscita di `robocopy`**: non è un programma
+    "normale" (0 = successo): i valori 0-7 sono tutti esiti di successo
+    (es. 1 = file copiati correttamente), 8+ indica un errore reale — va
+    controllato con `if errorlevel 8 ...`, mai con
+    `if %errorlevel% neq 0 ...` (che tratterebbe una copia riuscita come
+    un fallimento). La cartella di backup precedente (se esiste da un
+    tentativo precedente) viene rinominata con suffisso `-precedente`
+    invece di sovrascritta silenziosamente, usando solo `move`/`rmdir`
+    nativi di cmd — nessun timestamp generato (avrebbe richiesto
+    PowerShell, oppure `%date%`/`%time%`, fragili perché il loro formato
+    dipende dalle impostazioni regionali di Windows, altro classico
+    problema di portabilità degli script batch). **Promemoria generale**:
+    per uno script da eseguire su un PC Windows reale e sconosciuto (mai
+    testato di persona, §nota fuori milestone installer), preferire sempre
+    i comandi nativi di `cmd.exe` (`robocopy`, `xcopy`, `findstr`,
+    `netstat`) a PowerShell quando il compito lo permette — PowerShell può
+    essere ristretto da policy aziendali in modi che `-ExecutionPolicy
+    Bypass` non sempre supera, mentre i binari di sistema in System32
+    quasi sempre restano eseguibili.
 
 ### Nota fuori milestone: generatore di sito pubblico con template
 

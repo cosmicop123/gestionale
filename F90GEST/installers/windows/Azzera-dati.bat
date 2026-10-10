@@ -8,6 +8,8 @@ echo ============================================================
 echo   AZZERAMENTO COMPLETO DEI DATI DI F90GEST
 echo ============================================================
 echo.
+echo Cartella rilevata: %ROOT%
+echo.
 echo Questo comando CANCELLA TUTTI i dati del gestionale: soci,
 echo contabilita', ricevute, corsi, documenti, email configurate,
 echo tutto. L'applicazione torna allo stato di "primo avvio", con
@@ -15,9 +17,9 @@ echo l'utente amministratore predefinito:
 echo     email:    admin@example.org
 echo     password: CambiaSubito!2026
 echo.
-echo Prima di procedere viene creato un backup di sicurezza dei dati
-echo attuali in un file .zip accanto a questo script, cosi' puoi
-echo recuperarli se ti accorgi di aver sbagliato. Questo backup NON
+echo Prima di procedere viene creata una copia di sicurezza dei dati
+echo attuali in una cartella accanto a questo script, cosi' puoi
+echo recuperarli se ti accorgi di aver sbagliato. Questa copia NON
 echo sostituisce un backup fatto da te prima d'ora: se i dati attuali
 echo sono importanti, assicurati di averne gia' una copia altrove
 echo (es. Amministrazione - Backup e ripristino, dentro l'app).
@@ -32,8 +34,10 @@ if not "%CONFERMA%"=="AZZERA" (
 
 if not exist "%NODE_DIR%\node.exe" (
     echo.
-    echo Nessuna installazione di F90GEST trovata in questa cartella.
-    echo Esegui prima F90GEST-Setup-Windows.exe.
+    echo Nessuna installazione di F90GEST trovata in questa cartella
+    echo ^(%ROOT%^).
+    echo Esegui prima F90GEST-Setup-Windows.exe, oppure sposta questo
+    echo file dentro la cartella dove hai installato F90GEST e riprova.
     pause
     exit /b 1
 )
@@ -45,21 +49,36 @@ for /f "tokens=5" %%p in ('netstat -ano ^| findstr /R /C:":3000 " ^| findstr LIS
 )
 
 echo.
-echo Creo un backup di sicurezza prima di azzerare i dati...
-for /f "delims=" %%t in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd-HHmmss"') do set "TIMESTAMP=%%t"
-set "BACKUP_ZIP=%ROOT%Backup-prima-di-azzeramento-%TIMESTAMP%.zip"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$percorsi = @('%APP_DIR%\prisma\data', '%APP_DIR%\storage') | Where-Object { Test-Path $_ }; if ($percorsi.Count -eq 0) { Write-Host 'Nessun dato esistente da salvare (prima esecuzione?).'; exit 0 }; Compress-Archive -Path $percorsi -DestinationPath '%BACKUP_ZIP%' -Force"
-if %ERRORLEVEL% NEQ 0 (
+echo Creo una copia di sicurezza prima di azzerare i dati...
+set "BACKUP_DIR=%ROOT%Backup-prima-di-azzeramento"
+if exist "%BACKUP_DIR%" (
+    if exist "%BACKUP_DIR%-precedente" rmdir /s /q "%BACKUP_DIR%-precedente"
+    move "%BACKUP_DIR%" "%BACKUP_DIR%-precedente" >nul
+    echo ^(La copia di sicurezza del tentativo precedente e' stata conservata in:
+    echo  %BACKUP_DIR%-precedente^)
+)
+mkdir "%BACKUP_DIR%" 2>nul
+
+set BACKUP_OK=1
+if exist "%APP_DIR%\prisma\data" (
+    robocopy "%APP_DIR%\prisma\data" "%BACKUP_DIR%\prisma\data" /e >nul
+    if errorlevel 8 set BACKUP_OK=0
+)
+if exist "%APP_DIR%\storage" (
+    robocopy "%APP_DIR%\storage" "%BACKUP_DIR%\storage" /e >nul
+    if errorlevel 8 set BACKUP_OK=0
+)
+
+if "%BACKUP_OK%"=="0" (
     echo.
-    echo ERRORE: non sono riuscito a creare il backup di sicurezza.
+    echo ERRORE: non sono riuscito a completare la copia di sicurezza in
+    echo %BACKUP_DIR%
     echo Per precauzione mi fermo QUI, senza azzerare nulla.
-    echo Se il problema persiste, contattami per sistemarlo.
+    echo Se il problema persiste, contattami riportando questo messaggio.
     pause
     exit /b 1
 )
-if exist "%BACKUP_ZIP%" (
-    echo Backup di sicurezza salvato in: %BACKUP_ZIP%
-)
+echo Copia di sicurezza salvata in: %BACKUP_DIR%
 
 echo.
 echo Azzero il database (vengono ricreati utente amministratore e dati minimi)...
@@ -67,8 +86,8 @@ cd /d "%APP_DIR%"
 "%NODE_DIR%\node.exe" "%NODE_DIR%\node_modules\npm\bin\npx-cli.js" prisma migrate reset --force
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo ERRORE durante l'azzeramento del database (codice %ERRORLEVEL%).
-    echo I dati originali restano comunque nel backup di sicurezza sopra indicato.
+    echo ERRORE durante l'azzeramento del database ^(codice %ERRORLEVEL%^).
+    echo I dati originali restano comunque nella copia di sicurezza sopra indicata.
     pause
     exit /b 1
 )

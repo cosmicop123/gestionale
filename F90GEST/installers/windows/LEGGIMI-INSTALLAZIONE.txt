@@ -19,10 +19,11 @@ TRE FILE DIVERSI: QUALE USARE
   F90GEST" (installato/aggiornato automaticamente dai due file sopra; se
   la tua installazione non ce l'ha ancora, esegui prima
   F90GEST-Aggiornamento-Windows.exe). Chiede conferma digitando una
-  parola esatta prima di procedere, e salva automaticamente un backup di
-  sicurezza (.zip) accanto a sé stesso prima di cancellare qualunque cosa
-  — ma usalo solo se sei sicuro: non è pensato per l'uso quotidiano, solo
-  per ripartire da zero (es. dopo aver provato l'app con dati di prova).
+  parola esatta prima di procedere, e salva automaticamente una copia di
+  sicurezza dei dati attuali (in una cartella "Backup-prima-di-azzeramento"
+  accanto a sé stesso) prima di cancellare qualunque cosa — ma usalo solo
+  se sei sicuro: non è pensato per l'uso quotidiano, solo per ripartire
+  da zero (es. dopo aver provato l'app con dati di prova).
 
 Il resto di questo documento riguarda l'installazione completa
 (Setup.exe, la prima volta); l'aggiornamento funziona allo stesso modo

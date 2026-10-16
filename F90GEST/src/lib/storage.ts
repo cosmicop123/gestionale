@@ -1,5 +1,5 @@
 import "server-only";
-import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile, unlink } from "node:fs/promises";
 import { join, dirname, extname } from "node:path";
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
@@ -55,4 +55,25 @@ export async function leggiAllegato(allegatoId: string): Promise<{ buffer: Buffe
 
   const buffer = await readFile(join(/* turbopackIgnore: true */ STORAGE_DIR, allegato.percorso));
   return { buffer, mimeType: allegato.mimeType, nomeFileOriginale: allegato.nomeFileOriginale };
+}
+
+/**
+ * Cancellazione reale (non soft-delete) del file e della riga Allegato:
+ * da usare solo quando anche l'entità proprietaria viene cancellata per
+ * davvero (es. ricevute errate rimosse da un'operazione di manutenzione),
+ * mai per il normale ciclo di vita di un allegato (quello usa solo la
+ * lettura/sostituzione, coerente con il resto dell'app). Tollera un file
+ * già mancante su disco: l'obiettivo è che la riga Allegato sparisca
+ * comunque, non bloccarsi su un'incoerenza minore.
+ */
+export async function eliminaAllegato(allegatoId: string): Promise<void> {
+  const allegato = await prisma.allegato.findUnique({ where: { id: allegatoId } });
+  if (!allegato) return;
+
+  try {
+    await unlink(join(/* turbopackIgnore: true */ STORAGE_DIR, allegato.percorso));
+  } catch {
+    // file già assente: non impedisce la pulizia della riga DB.
+  }
+  await prisma.allegato.delete({ where: { id: allegatoId } });
 }

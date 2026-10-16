@@ -101,6 +101,18 @@ segreteria e sola lettura in sola consultazione):
   gestionale per quell'anno vengono annullate in blocco (restano
   consultabili con la dicitura "ANNULLATA", non vengono mai cancellate) e
   la numerazione riparte pulita dal numero che hai indicato.
+- **Azzerare quote e ricevute** (solo amministratore, bottone "Azzera quote
+  e ricevute" nella tab Ricevute): a differenza della correzione
+  numerazione, qui le quote e le ricevute vengono **cancellate per
+  davvero**, insieme ai pagamenti e ai movimenti di prima nota collegati.
+  Usala solo se hai registrato quote/ricevute per errore e non le hai mai
+  consegnate a nessuno come documento valido (es. errori durante
+  l'impostazione iniziale) — non per ricevute reali già emesse, per quelle
+  usa l'annullamento singolo o la correzione numerazione. I soci restano
+  tutti registrati: solo le loro quote e ricevute spariscono. Lo stato del
+  socio (es. "attivo") non si aggiorna da solo: controlla tu, dopo, se va
+  riportato a "in attesa". Scarica sempre un backup prima (il dialog ha un
+  link diretto) — l'azione non ne fa uno automaticamente.
 - **Prima nota**: puoi registrare anche movimenti non legati a una quota
   (es. una spesa per materiali). Per le uscite oltre una certa soglia è
   obbligatorio allegare uno scontrino/fattura oppure spiegare perché non

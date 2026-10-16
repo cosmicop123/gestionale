@@ -664,6 +664,58 @@ deve poter continuare la numerazione dal punto giusto, non ripartire da 1
   cambia solo la validità del documento-ricevuta. Comportamento verificato
   leggendo la migration SQL generata, non assunto.
 
+### Nota fuori milestone: azzeramento reale di quote e ricevute (lasciando i soci)
+
+Su richiesta esplicita dell'utente, distinta dalla precedente: quote e
+ricevute create per errore durante l'impostazione iniziale (mai documenti
+validi consegnati a qualcuno), da cancellare per davvero mantenendo
+l'anagrafica soci già inserita.
+
+- **Cancellazione reale, non annullamento — scelta deliberata e diversa
+  dalla nota precedente**: l'utente aveva chiesto in entrambi i casi di
+  "cancellare"; per la correzione della numerazione si è scelto comunque
+  di annullare (ricevute potenzialmente già consegnate a soci veri). Qui
+  invece si cancella davvero (`azzeraQuoteERicevute`,
+  `src/lib/manutenzione/actions.ts`), perché il contesto è esplicitamente
+  "ho sbagliato tutte le quote e le ricevute" durante l'impostazione
+  iniziale — non documenti fiscali già emessi a terzi, ma dati da
+  correggere prima che l'uso reale cominci davvero. **Non generalizzare**:
+  la decisione se cancellare o annullare va sempre valutata caso per caso
+  su cosa l'utente sta effettivamente descrivendo, non applicata per
+  default a ogni richiesta simile futura.
+- **Cosa viene cancellato e perché in quest'ordine**: `MovimentoPrimaNota`
+  collegati (altrimenti il saldo di cassa resterebbe gonfiato da incassi
+  ormai senza quota/ricevuta a giustificarli) → `Ricevuta` (+ relativo
+  `Allegato` PDF su disco, via la nuova `eliminaAllegato` in
+  `src/lib/storage.ts`, prima cancellazione reale di un allegato
+  nell'app — finora solo lettura/sostituzione) → `Pagamento` **solo quelli
+  con `quotaId` valorizzato** (i pagamenti "liberi", es. erogazioni
+  liberali senza quota collegata, restano intatti) → `Quota` (tutte).
+  `Tesseramento.quotaId` si annulla da solo (`ON DELETE SET NULL`, già
+  verificato per l'azione precedente): la tessera stessa non viene mai
+  toccata.
+- **Stato socio non retrocesso automaticamente**: se il pagamento
+  cancellato aveva fatto passare un socio da "in attesa" ad "attivo",
+  quello stato resta "attivo" anche dopo — il sistema non ha un modo
+  affidabile di sapere se quella transizione dipendeva *solo* da quel
+  pagamento. Dichiarato esplicitamente nel messaggio di esito mostrato
+  all'amministratore, che deve verificare a mano sulla scheda del socio
+  se necessario, invece di fingere una certezza che il sistema non ha.
+  Stesso principio già seguito altrove (§12, non inventare/forzare
+  conclusioni che l'app non può garantire).
+- **Frase di conferma diversa da quelle già esistenti** ("ELIMINA", contro
+  "AZZERA" di `Azzera-dati.bat` e di "Correggi numerazione"): le tre azioni
+  distruttive convivono ormai nella stessa area dell'app/installer, una
+  frase diversa per ciascuna riduce il rischio di confermare per abitudine
+  l'azione sbagliata quando se ne usa una dopo l'altra.
+- **Nessun backup automatico integrato in questa azione** (a differenza di
+  `Azzera-dati.bat`, che lo fa sempre da solo): qui si rimanda esplicitamente
+  al backup già scaricabile in un click da Amministrazione → Backup e
+  ripristino (link diretto nel dialog di conferma), invece di duplicare
+  quella funzionalità — l'azione gira dentro l'app con una sessione utente
+  già autenticata, il modo più semplice per ottenere un backup pre-azione è
+  quello già pronto, non un meccanismo nuovo.
+
 ### Note di continuità per M10 (milestone finale — utile per lavoro futuro)
 
 - **Nessuna migrazione Prisma necessaria**: M10 non introduce nuovi modelli,

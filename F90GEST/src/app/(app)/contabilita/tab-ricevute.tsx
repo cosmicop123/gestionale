@@ -5,9 +5,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
-import { Loader2, FileText, AlertTriangle } from "lucide-react";
+import { Loader2, FileText, AlertTriangle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Ricevuta } from "@prisma/client";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { annullaRicevuta, azzeraNumerazioneRicevute } from "@/lib/ricevuta/actions";
+import { azzeraQuoteERicevute } from "@/lib/manutenzione/actions";
 
 type RicevutaConIntestatario = Ricevuta & { intestatario: { nome: string; cognome: string } };
 
@@ -119,6 +121,84 @@ function DialogAzzeraNumerazione() {
   );
 }
 
+/**
+ * Cancella davvero (non annulla) tutte le quote e le ricevute, lasciando
+ * intatti i soci: pensato per correggere un errore di impostazione iniziale
+ * (quote/ricevute mai valide, non documenti già emessi a qualcuno), a
+ * differenza della correzione numerazione sopra che non cancella mai nulla.
+ * Frase di conferma diversa ("ELIMINA") apposta, per non confondere le due
+ * azioni distruttive quando sono una sopra l'altra nella stessa schermata.
+ */
+function DialogAzzeraQuoteERicevute() {
+  const router = useRouter();
+  const [aperto, setAperto] = useState(false);
+  const [inCorso, setInCorso] = useState(false);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setInCorso(true);
+    const formData = new FormData(e.currentTarget);
+    const esito = await azzeraQuoteERicevute(formData);
+    setInCorso(false);
+    if ("errore" in esito) {
+      toast.error(esito.errore);
+      return;
+    }
+    toast.success(esito.messaggio);
+    setAperto(false);
+    router.refresh();
+  }
+
+  return (
+    <Dialog open={aperto} onOpenChange={setAperto}>
+      <DialogTrigger asChild>
+        <Button type="button" variant="outline" size="sm">
+          <Trash2 /> Azzera quote e ricevute
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Azzerare tutte le quote e le ricevute?</DialogTitle>
+          <DialogDescription className="space-y-2">
+            <span className="block">
+              A differenza di &quot;Correggi numerazione&quot;, qui le quote e le ricevute vengono{" "}
+              <strong>cancellate per davvero</strong> (insieme ai pagamenti e ai movimenti di prima nota
+              collegati), non solo annullate. Usala solo se sono state registrate per errore e non sono mai
+              state consegnate a nessuno come documento valido.
+            </span>
+            <span className="block">
+              I soci, le domande di ammissione e le tessere <strong>non vengono toccati</strong>. Lo stato
+              di un socio (es. &quot;attivo&quot;) non viene riportato automaticamente a &quot;in attesa&quot;:
+              se serve, correggilo a mano dopo sulla sua scheda.
+            </span>
+            <span className="block">
+              Prima di procedere, scarica un backup da{" "}
+              <Link href="/amministrazione" className="underline">
+                Amministrazione → Backup e ripristino
+              </Link>
+              .
+            </span>
+          </DialogDescription>
+        </DialogHeader>
+        <form className="space-y-4" onSubmit={onSubmit}>
+          <div className="space-y-2">
+            <Label htmlFor="confermaQuote">
+              Digita <code>ELIMINA</code> per confermare
+            </Label>
+            <Input id="confermaQuote" name="conferma" autoComplete="off" required />
+          </div>
+          <DialogFooter>
+            <Button type="submit" variant="destructive" disabled={inCorso}>
+              {inCorso && <Loader2 className="animate-spin" />}
+              Conferma
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function TabRicevute({
   ricevute,
   puoScrivere,
@@ -152,8 +232,9 @@ export function TabRicevute({
     <Card>
       <CardContent className="pt-6 space-y-4">
         {isAmministratore && (
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
             <DialogAzzeraNumerazione />
+            <DialogAzzeraQuoteERicevute />
           </div>
         )}
         <Table>

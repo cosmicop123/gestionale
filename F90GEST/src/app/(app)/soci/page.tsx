@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, FileSignature } from "lucide-react";
 import { richiediRuolo } from "@/lib/auth/richiedi-utente";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,8 @@ export default async function SociPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  await richiediRuolo(["amministratore", "segreteria", "tesoriere", "sola_lettura"]);
+  const utenteCorrente = await richiediRuolo(["amministratore", "segreteria", "tesoriere", "sola_lettura"]);
+  const puoGestireVerbaleAmmissione = ["amministratore", "segreteria"].includes(utenteCorrente.ruolo);
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
 
@@ -59,6 +60,13 @@ export default async function SociPage({
           <Button variant="outline" asChild>
             <Link href="/soci/libro-soci">Libro soci</Link>
           </Button>
+          {puoGestireVerbaleAmmissione && (
+            <Button variant="outline" asChild>
+              <Link href="/soci/verbale-ammissione">
+                <FileSignature /> Verbale ammissione
+              </Link>
+            </Button>
+          )}
           <Button variant="outline" asChild>
             <Link href="/soci/importa">Importa da Excel</Link>
           </Button>

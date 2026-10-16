@@ -5,15 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { prossimoNumero } from "@/lib/numeratore";
 import { calcolaBollo } from "@/lib/contabilita/bollo";
 import { ottieniParametriContabilita } from "@/lib/parametri";
-import { salvaAllegato, leggiAllegato } from "@/lib/storage";
+import { salvaAllegato, datiUriAllegato } from "@/lib/storage";
 import { RicevutaDocument } from "./ricevuta-pdf";
-
-async function datiUriAllegato(allegatoId: string | null | undefined): Promise<string | null> {
-  if (!allegatoId) return null;
-  const allegato = await leggiAllegato(allegatoId);
-  if (!allegato) return null;
-  return `data:${allegato.mimeType};base64,${allegato.buffer.toString("base64")}`;
-}
 
 /**
  * Crea la riga Ricevuta dentro la transazione del chiamante (numerazione

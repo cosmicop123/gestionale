@@ -716,6 +716,123 @@ l'anagrafica soci già inserita.
   già autenticata, il modo più semplice per ottenere un backup pre-azione è
   quello già pronto, non un meccanismo nuovo.
 
+### Nota fuori milestone: Consiglio direttivo, verbale di proposta ammissione, Compilatore comunicazioni
+
+Su richiesta esplicita dell'utente, dopo l'azzeramento reale di quote e
+ricevute: un modulo verbale in Soci con l'elenco dei neo-iscritti da
+sottoporre al Consiglio Direttivo per l'ammissione, precompilato con la
+firma dei componenti del Consiglio in calce e modificabile dal programma,
+più una nuova sezione "Compilatore" per comunicazioni varie con editor di
+testo formattato ed esportazione PDF.
+
+- **`CaricaSociale` esisteva già nello schema fin da M0** (con i ruoli
+  Presidente/Vicepresidente/Segretario/Tesoriere/Consigliere e storico per
+  mandato), ma — come già annotato nella milestone del logo/firma
+  Presidente — non aveva mai avuto un'interfaccia: nessun CRUD, modello
+  completamente inutilizzato. L'utente, chiedendo la possibilità di
+  modificare "dal programma" i nominativi da stampare in calce al verbale,
+  ha finalmente dato un caso d'uso concreto per costruirla, invece di
+  introdurre un campo di testo libero più semplice (come fatto invece per
+  `firmaPresidenteTesto`, dove non esisteva un modello già pronto):
+  **nessuna nuova migrazione Prisma necessaria per questa milestone**, è
+  bastata l'interfaccia (`src/lib/carica-sociale/actions.ts`, tab
+  "Consiglio direttivo" in Amministrazione).
+- **Nomina di un ruolo "unico" chiude automaticamente il titolare
+  precedente, mai un update**: per Presidente/Vicepresidente/Segretario/
+  Tesoriere (ma non per Consigliere, che può essere più di uno
+  contemporaneamente) `nominaCaricaSociale` imposta
+  `dataFineMandato = dataInizioMandato` del nuovo titolare su qualunque
+  riga attiva dello stesso ruolo, poi crea una riga nuova — stesso
+  principio già seguito per `SocioStato` (storico per-riga, mai un
+  aggiornamento in-place di uno stato precedente).
+- **`eliminaCaricaSociale` è una cancellazione logica per correggere un
+  inserimento errato** (persona o ruolo sbagliati al momento della nomina),
+  diversa da "termina mandato" (un evento reale, la fine di un incarico):
+  usa `deletedAt`, già presente nel modello fin da M0, mai una `delete`
+  reale — `CaricaSociale` non è nell'elenco append-only rigido di §7.1, ma
+  si è scelto comunque di non cancellare mai una riga per davvero, per non
+  perdere traccia di cosa è stato corretto.
+- **Verbale di proposta ammissione come documento rapido e indipendente**,
+  non integrato nel flusso Riunioni/Delibere di Libri sociali (M8): scelta
+  esplicita dell'utente tra le due alternative proposte. Da Soci → bottone
+  "Verbale ammissione" (solo amministratore e segreteria), apre
+  direttamente l'editor del Compilatore precompilato — nessuna
+  convocazione, quorum o delibera formale da gestire qui: è pensato come
+  una proposta/allegato da portare alla riunione del Consiglio che decide
+  davvero l'ammissione, non il verbale ufficiale di quella riunione.
+  `costruisciBozzaVerbaleAmmissione` (`src/lib/socio/verbale-ammissione-html.ts`)
+  è una funzione pura (testata senza database) che costruisce l'HTML
+  iniziale a partire dalle `DomandaAmmissione` con `stato: "in_valutazione"`
+  e dall'elenco del Consiglio Direttivo attuale (`elencoConsiglioDirettivoAttuale`,
+  `src/lib/carica-sociale/elenco.ts`) — il testo resta poi liberamente
+  modificabile nello stesso editor, comprese le righe di firma: sono
+  semplici paragrafi, non un blocco rigido separato.
+- **Il verbale di ammissione E la sezione "Compilatore" condividono lo
+  stesso editor e la stessa pipeline di generazione PDF**: non sono due
+  funzionalità distinte che si somigliano, il verbale è semplicemente il
+  Compilatore aperto con un contenuto iniziale già scritto
+  (`EditorComunicazione`, `src/components/compilatore/editor-comunicazione.tsx`,
+  riceve `contenutoIniziale` come prop e non sa/non deve sapere da dove
+  viene). Questo evita di duplicare sia l'editor sia il parser HTML→PDF per
+  quello che altrimenti sarebbe stato un piccolo caso speciale.
+- **Editor con `contentEditable` + `document.execCommand`, non una libreria
+  di rich-text**: scelto esplicitamente dall'utente tra le due alternative
+  proposte (formattazione reale vs. testo semplice a paragrafi). Nessuna
+  nuova dipendenza npm per l'editing (API nativa del browser): la barra
+  mostra Grassetto/Corsivo/Sottolineato/Titoli 1-3/Paragrafo normale/Elenco
+  puntato/Elenco numerato/Rimuovi formattazione. `execCommand` è
+  deprecato nelle specifiche web ma resta ampiamente supportato dai motori
+  Chromium/Edge su cui gira realisticamente questo gestionale (vedi
+  l'installer Windows); non è stata vista l'esigenza di introdurre una
+  libreria (es. Tiptap) solo per sostituire un'API che funziona.
+  `contentEditable` è volutamente "non controllato" da React dopo il
+  montaggio (`innerHTML` impostato una sola volta in un `useEffect`):
+  risincronizzarlo ad ogni render sposterebbe il cursore dell'utente a ogni
+  tasto premuto, stesso principio generale di qualunque editor di testo
+  non controllato in React.
+- **`node-html-parser` è l'unica nuova dipendenza npm introdotta**, solo
+  lato server: `@react-pdf/renderer` non accetta HTML arbitrario (ha i
+  suoi primitivi `Text`/`View`), quindi l'HTML prodotto dall'editor va
+  convertito prima di generare il PDF (`src/lib/compilatore/html-to-pdf-nodi.tsx`,
+  `costruisciNodiPdf`). Scelta deliberata rispetto a scrivere un parser
+  HTML a mano con regex (fragile per tag annidati) o a introdurre
+  qualcosa di più pesante come jsdom/Puppeteer (quest'ultimo in particolare
+  avrebbe significato imbarcare un intero Chromium nell'installer Windows,
+  proprio ciò che si era evitato scegliendo NSIS invece di Electron per
+  l'installer stesso) — `node-html-parser` è puro JavaScript, nessuna
+  dipendenza nativa, ~30 KB.
+- **Il parser tratta qualunque tag non riconosciuto come un contenitore
+  generico** (mantiene testo e formattazione annidata) **invece di
+  scartarlo**, con un'unica eccezione deliberata: il contenuto di
+  `<script>`/`<style>` viene scartato per intero. Non è un sanitizzatore
+  HTML generico (non serve: l'HTML in ingresso non viene mai salvato né
+  re-interpretato come markup altrove, solo convertito una volta in nodi
+  react-pdf per generare un PDF) — è solo una conversione "best effort" che
+  non deve mai perdere silenziosamente il testo scritto da chi compila il
+  documento.
+- **Nessuna nuova tabella per "comunicazioni compilate"**: il Compilatore
+  non persiste mai l'HTML scritto, solo il PDF risultante quando si scelga
+  "Salva in archivio" (stessa riga `Documento` + `Allegato` già usata dai
+  modelli di documento, `src/lib/compilatore/actions.ts`); il solo download
+  (`/compilatore/genera-pdf`) non salva nulla, stesso principio "generato
+  al volo, non persistito" già seguito per il verbale di riunione (M8) e
+  per i modelli di documento.
+- **`datiUriAllegato` estratta da `src/lib/ricevuta/genera.ts` a
+  `src/lib/storage.ts`** (esportata) quando è servita una seconda volta per
+  il logo nel PDF del Compilatore: stessa logica, un solo punto da
+  mantenere, nessun comportamento cambiato per le ricevute.
+- **Bug di test trovato scrivendo l'e2e di questa milestone**: un
+  `<Dialog>` chiuso resta montato per la durata dell'animazione di uscita
+  (stesso principio già annotato nelle note di continuità di M8), col suo
+  `<select>` nativo nascosto (mirror di accessibilità dei componenti
+  `Select`) che duplica il testo appena selezionato — qui capitato subito
+  dopo aver nominato un titolare, controllando il suo nome sulla stessa
+  schermata. Risolto ricaricando la pagina (`page.reload()`) invece di
+  continuare sulla stessa, più robusto di un semplice `.first()` quando la
+  stessa persona può comparire più volte di proposito nella UI reale (qui,
+  sia nella "Composizione attuale" sia nello "Storico cariche" sottostante
+  — per quel secondo caso, inevitabile perché voluto, si è usato `.first()`).
+
 ### Note di continuità per M10 (milestone finale — utile per lavoro futuro)
 
 - **Nessuna migrazione Prisma necessaria**: M10 non introduce nuovi modelli,

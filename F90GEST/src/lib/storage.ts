@@ -58,6 +58,20 @@ export async function leggiAllegato(allegatoId: string): Promise<{ buffer: Buffe
 }
 
 /**
+ * Legge un allegato immagine (logo, firma) e lo restituisce come data URI,
+ * pronto per la prop `src` di un `<Image>` di @react-pdf/renderer. Estratta
+ * da `src/lib/ricevuta/genera.ts` (dove era privata) quando è servita una
+ * seconda volta per un altro generatore di PDF (Compilatore comunicazioni):
+ * stessa logica, un solo punto da mantenere.
+ */
+export async function datiUriAllegato(allegatoId: string | null | undefined): Promise<string | null> {
+  if (!allegatoId) return null;
+  const allegato = await leggiAllegato(allegatoId);
+  if (!allegato) return null;
+  return `data:${allegato.mimeType};base64,${allegato.buffer.toString("base64")}`;
+}
+
+/**
  * Cancellazione reale (non soft-delete) del file e della riga Allegato:
  * da usare solo quando anche l'entità proprietaria viene cancellata per
  * davvero (es. ricevute errate rimosse da un'operazione di manutenzione),

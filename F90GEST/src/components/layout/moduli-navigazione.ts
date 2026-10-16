@@ -10,6 +10,7 @@ import {
   Mail,
   ShieldCheck,
   Settings,
+  FileEdit,
 } from "lucide-react";
 
 export type VoceNavigazione = {
@@ -36,6 +37,7 @@ export const vociNavigazione: VoceNavigazione[] = [
   { titolo: "Libri sociali", href: "/libri-sociali", icona: BookMarked, disponibileDaMilestone: "M8", attivo: true, soloRuoli: ["amministratore", "segreteria", "tesoriere", "sola_lettura"] },
   { titolo: "Documenti e protocollo", href: "/documenti", icona: FolderArchive, disponibileDaMilestone: "M8", attivo: true, soloRuoli: ["amministratore", "segreteria", "tesoriere", "sola_lettura"] },
   { titolo: "Comunicazioni", href: "/comunicazioni", icona: Mail, disponibileDaMilestone: "M9", attivo: true, soloRuoli: ["amministratore", "segreteria"] },
+  { titolo: "Compilatore", href: "/compilatore", icona: FileEdit, disponibileDaMilestone: "extra", attivo: true, soloRuoli: ["amministratore", "segreteria"] },
   { titolo: "Privacy", href: "/privacy", icona: ShieldCheck, disponibileDaMilestone: "M9", attivo: true, soloRuoli: ["amministratore", "segreteria"] },
   { titolo: "Amministrazione", href: "/amministrazione", icona: Settings, disponibileDaMilestone: "M1", attivo: true, soloRuoli: ["amministratore"] },
 ];

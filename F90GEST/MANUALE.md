@@ -72,6 +72,15 @@ Da **Soci e tesseramenti** puoi:
 - **Importare un elenco soci già esistente da Excel o CSV**: carica il
   file, abbina le colonne ai campi del gestionale, controlla l'anteprima
   (le righe con errori vengono segnalate e non importate) e conferma.
+- **Verbale di proposta ammissione** (bottone "Verbale ammissione", solo
+  amministratore e segreteria): genera automaticamente un testo già pronto
+  con l'elenco di tutte le domande di ammissione ancora in attesa di
+  valutazione e, in calce, la firma di ciascun componente del Consiglio
+  Direttivo attuale (configurato da Amministrazione → Consiglio direttivo).
+  Il testo resta completamente modificabile — non è il verbale ufficiale
+  della riunione, ma una proposta da portare al Consiglio per la
+  discussione — e si scarica in PDF o si salva nell'archivio documenti
+  esattamente come dal Compilatore (vedi sotto).
 
 ## Contabilità
 
@@ -294,6 +303,21 @@ Da **Documenti e protocollo**:
   lettere di convocazione, moduli di richiesta, comunicazioni standard che
   ripeti spesso cambiando solo nome, data o pochi altri dettagli.
 
+## Compilatore
+
+Da **Compilatore** puoi scrivere e formattare liberamente una comunicazione
+una tantum (lettera, avviso, circolare...) senza passare da un modello con
+segnaposto fissi:
+
+- Scrivi il testo nell'area di modifica usando la barra di formattazione
+  (grassetto, corsivo, sottolineato, titoli, elenchi puntati e numerati).
+- **"Esporta PDF"** scarica subito il documento, con l'intestazione
+  dell'associazione (e il logo, se caricato) in alto.
+- **"Salva in archivio"** lo salva anche tra i "Documenti" (Documenti e
+  protocollo), nella categoria che scegli.
+- Il **verbale di proposta ammissione** di Soci (vedi sopra) usa lo stesso
+  identico editor, solo già precompilato.
+
 ## Comunicazioni
 
 Da **Comunicazioni** puoi inviare email a gruppi di persone:
@@ -345,6 +369,24 @@ dell'associazione) sia una casella **PEC** (Posta Elettronica Certificata).
   vuoto un campo password mantiene quella già salvata.
 - Le password inserite qui vengono sempre cifrate prima di essere salvate,
   non sono mai leggibili in chiaro nemmeno da chi ha accesso al database.
+
+## Consiglio direttivo (Amministrazione)
+
+Da **Amministrazione → Consiglio direttivo** gestisci chi occupa ciascuna
+carica sociale (Presidente, Vicepresidente, Segretario, Tesoriere,
+Consigliere) — i nominativi usati in calce al verbale di proposta
+ammissione e, in generale, in ogni documento del Compilatore che li
+richiami:
+
+- **"Nomina"** (uno per ruolo): scegli una persona già censita come socio e
+  la data di inizio mandato. Per Presidente, Vicepresidente, Segretario e
+  Tesoriere, il titolare eventualmente già in carica viene chiuso in
+  automatico a quella data (un solo titolare attivo alla volta); per
+  Consigliere puoi averne più di uno contemporaneamente.
+- **"Termina mandato"** chiude il mandato di un titolare attuale alla data
+  che indichi.
+- Lo **storico** sotto mostra tutte le cariche, concluse e in corso: resta
+  sempre consultabile chi ha occupato ogni ruolo e da quando.
 
 ## Privacy
 

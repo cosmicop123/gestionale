@@ -9,22 +9,42 @@ import { TabBackup } from "./tab-backup";
 import { TabRegistroControllo } from "./tab-registro-controllo";
 import { TabSitoPubblico } from "./tab-sito-pubblico";
 import { TabEmail, type CasellaEmailRiga } from "./tab-email";
+import { TabConsiglioDirettivo } from "./tab-consiglio-direttivo";
 import { ottieniParametriSitoPubblico } from "@/lib/sito-pubblico/parametri";
 import type { DatiEnte } from "@/lib/validazioni/ente";
 
 export default async function AmministrazionePage() {
   const utenteCorrente = await richiediRuolo(["amministratore"]);
 
-  const [associazione, anniSociali, utenti, informativaCorrente, vociAudit, configurazioneSitoPubblico, caselleEmail] =
-    await Promise.all([
-      prisma.associazione.findFirst(),
-      prisma.annoSociale.findMany({ orderBy: { dataInizio: "desc" } }),
-      prisma.utente.findMany({ where: { deletedAt: null }, orderBy: { email: "asc" } }),
-      prisma.informativa.findFirst({ orderBy: { dataPubblicazione: "desc" } }),
-      prisma.auditLog.findMany({ include: { utente: true }, orderBy: { timestamp: "desc" }, take: 300 }),
-      ottieniParametriSitoPubblico(),
-      prisma.casellaEmail.findMany({ where: { deletedAt: null }, orderBy: { etichetta: "asc" } }),
-    ]);
+  const [
+    associazione,
+    anniSociali,
+    utenti,
+    informativaCorrente,
+    vociAudit,
+    configurazioneSitoPubblico,
+    caselleEmail,
+    caricheSociali,
+    personeConSocio,
+  ] = await Promise.all([
+    prisma.associazione.findFirst(),
+    prisma.annoSociale.findMany({ orderBy: { dataInizio: "desc" } }),
+    prisma.utente.findMany({ where: { deletedAt: null }, orderBy: { email: "asc" } }),
+    prisma.informativa.findFirst({ orderBy: { dataPubblicazione: "desc" } }),
+    prisma.auditLog.findMany({ include: { utente: true }, orderBy: { timestamp: "desc" }, take: 300 }),
+    ottieniParametriSitoPubblico(),
+    prisma.casellaEmail.findMany({ where: { deletedAt: null }, orderBy: { etichetta: "asc" } }),
+    prisma.caricaSociale.findMany({
+      where: { deletedAt: null },
+      include: { persona: { select: { id: true, nome: true, cognome: true } } },
+      orderBy: { dataInizioMandato: "desc" },
+    }),
+    prisma.persona.findMany({
+      where: { deletedAt: null, socio: { isNot: null } },
+      select: { id: true, nome: true, cognome: true },
+      orderBy: [{ cognome: "asc" }, { nome: "asc" }],
+    }),
+  ]);
 
   const caselleEmailRighe: CasellaEmailRiga[] = caselleEmail.map((c) => ({
     id: c.id,
@@ -46,6 +66,14 @@ export default async function AmministrazionePage() {
   if (!associazione) {
     return <p className="text-sm text-destructive">Anagrafica ente non trovata.</p>;
   }
+
+  const righeConsiglioDirettivo = caricheSociali.map((c) => ({
+    id: c.id,
+    ruolo: c.ruolo,
+    persona: c.persona,
+    dataInizioMandato: c.dataInizioMandato.toISOString(),
+    dataFineMandato: c.dataFineMandato ? c.dataFineMandato.toISOString() : null,
+  }));
 
   const valoriIniziali: DatiEnte = {
     denominazione: associazione.denominazione,
@@ -91,6 +119,7 @@ export default async function AmministrazionePage() {
           <TabsTrigger value="informativa">Informativa privacy</TabsTrigger>
           <TabsTrigger value="sito-pubblico">Sito pubblico</TabsTrigger>
           <TabsTrigger value="email">Email e PEC</TabsTrigger>
+          <TabsTrigger value="consiglio-direttivo">Consiglio direttivo</TabsTrigger>
           <TabsTrigger value="backup">Backup e ripristino</TabsTrigger>
           <TabsTrigger value="registro-controllo">Registro di controllo</TabsTrigger>
         </TabsList>
@@ -115,6 +144,9 @@ export default async function AmministrazionePage() {
         </TabsContent>
         <TabsContent value="email">
           <TabEmail caselle={caselleEmailRighe} />
+        </TabsContent>
+        <TabsContent value="consiglio-direttivo">
+          <TabConsiglioDirettivo righe={righeConsiglioDirettivo} persone={personeConSocio} />
         </TabsContent>
         <TabsContent value="backup">
           <TabBackup />

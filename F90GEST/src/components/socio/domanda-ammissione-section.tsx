@@ -35,13 +35,16 @@ import {
   schemaDomandaAmmissione,
   schemaApprovazioneDomanda,
   schemaRigettoDomanda,
+  schemaModificaCategoriaDomanda,
   type DatiDomandaAmmissione,
   type DatiApprovazioneDomanda,
+  type DatiModificaCategoriaDomanda,
 } from "@/lib/validazioni/socio";
 import {
   creaDomandaAmmissione,
   approvaDomandaAmmissione,
   rigettaDomandaAmmissione,
+  modificaCategoriaDomandaAmmissione,
 } from "@/lib/socio/actions";
 
 const oggi = () => new Date().toISOString().slice(0, 10);
@@ -144,6 +147,27 @@ export function DomandaInValutazioneCard({ domanda }: { domanda: DomandaInValuta
   const router = useRouter();
   const [dialogApprovaAperto, setDialogApprovaAperto] = useState(false);
   const [dialogRigettaAperto, setDialogRigettaAperto] = useState(false);
+  const [dialogModificaCategoriaAperto, setDialogModificaCategoriaAperto] = useState(false);
+
+  const {
+    handleSubmit: handleSubmitModificaCategoria,
+    control: controlModificaCategoria,
+    formState: { isSubmitting: inAttesaModificaCategoria },
+  } = useForm<DatiModificaCategoriaDomanda>({
+    resolver: zodResolver(schemaModificaCategoriaDomanda),
+    defaultValues: { categoriaProposta: domanda.categoriaProposta as DatiModificaCategoriaDomanda["categoriaProposta"] },
+  });
+
+  async function onModificaCategoria(dati: DatiModificaCategoriaDomanda) {
+    const esito = await modificaCategoriaDomandaAmmissione(domanda.id, dati);
+    if ("errore" in esito) {
+      toast.error(esito.errore);
+      return;
+    }
+    toast.success("Categoria proposta aggiornata.");
+    setDialogModificaCategoriaAperto(false);
+    router.refresh();
+  }
 
   const {
     register: registraApprova,
@@ -199,7 +223,43 @@ export function DomandaInValutazioneCard({ domanda }: { domanda: DomandaInValuta
           <dt className="text-muted-foreground">Data domanda</dt>
           <dd>{new Intl.DateTimeFormat("it-IT").format(domanda.dataDomanda)}</dd>
           <dt className="text-muted-foreground">Categoria proposta</dt>
-          <dd>{ETICHETTE_CATEGORIE_SOCIO[domanda.categoriaProposta as keyof typeof ETICHETTE_CATEGORIE_SOCIO]}</dd>
+          <dd className="flex items-center gap-2">
+            {ETICHETTE_CATEGORIE_SOCIO[domanda.categoriaProposta as keyof typeof ETICHETTE_CATEGORIE_SOCIO]}
+            <Dialog open={dialogModificaCategoriaAperto} onOpenChange={setDialogModificaCategoriaAperto}>
+              <DialogTrigger asChild>
+                <Button type="button" variant="link" size="sm" className="h-auto p-0">
+                  Modifica
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Modifica la categoria proposta</DialogTitle>
+                  <DialogDescription>
+                    Sposta la domanda su un&apos;altra categoria (es. da ordinario a junior) prima che il direttivo
+                    la approvi o la respinga. Una volta decisa, la domanda non è più modificabile da qui.
+                  </DialogDescription>
+                </DialogHeader>
+                <form className="space-y-4" onSubmit={handleSubmitModificaCategoria(onModificaCategoria)} noValidate>
+                  <div className="space-y-2">
+                    <Label htmlFor="categoriaPropostaModifica">Nuova categoria proposta</Label>
+                    <Controller
+                      control={controlModificaCategoria}
+                      name="categoriaProposta"
+                      render={({ field }) => (
+                        <SelettoreCategoria id="categoriaPropostaModifica" value={field.value} onChange={field.onChange} />
+                      )}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit" disabled={inAttesaModificaCategoria}>
+                      {inAttesaModificaCategoria && <Loader2 className="animate-spin" />}
+                      Salva
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </dd>
           {domanda.note && (
             <>
               <dt className="text-muted-foreground">Note</dt>

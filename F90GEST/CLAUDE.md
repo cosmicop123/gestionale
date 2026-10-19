@@ -833,6 +833,39 @@ testo formattato ed esportazione PDF.
   sia nella "Composizione attuale" sia nello "Storico cariche" sottostante
   — per quel secondo caso, inevitabile perché voluto, si è usato `.first()`).
 
+### Nota fuori milestone: correzione della categoria proposta su una domanda di ammissione
+
+Su richiesta esplicita dell'utente: poter spostare una domanda di
+ammissione da una categoria socio all'altra (es. da ordinario a junior).
+
+- **Chiarito con l'utente prima di implementare** (due decisioni che
+  toccavano un'invariante di design esplicita, §"Decisioni di design
+  confermate" punto 1: "Socio è immutabile dopo la creazione"): la
+  richiesta riguarda solo le domande **ancora in valutazione** (non
+  approvate), non il cambio di categoria di un socio già ammesso — quella
+  seconda esigenza (es. un socio "junior" che diventa maggiorenne) resta
+  una funzionalità distinta e più ampia (richiederebbe un nuovo storico
+  tipo `SocioStato`, dato che `Socio.categoria` è parte del record
+  immutabile), non implementata qui perché non è quella che serviva.
+  **Nota di continuità**: se dovesse servire in futuro, replicare lo stesso
+  pattern già usato per `SocioStato` (nuova tabella storico con periodo di
+  validità), mai un update diretto su `Socio.categoria`.
+- **`modificaCategoriaDomandaAmmissione`** (`src/lib/socio/actions.ts`):
+  permessa solo se `stato === "in_valutazione"` — una domanda già
+  approvata o respinta riflette una decisione già presa e registrata, non
+  più correggibile da qui (per l'approvazione, il dialog esistente
+  permette già di scegliere una categoria diversa da quella proposta al
+  momento della delibera, quindi quel caso resta coperto). `DomandaAmmissione`
+  non è nell'elenco append-only di §7.1, quindi un aggiornamento in-place
+  del campo è corretto; resta comunque un'azione tracciata in
+  `AuditLog` con il valore precedente e quello nuovo nel campo `diff`.
+- **UI**: un link "Modifica" accanto alla categoria proposta, visibile
+  solo mentre la domanda è "in valutazione" (la card con i bottoni
+  Approva/Respingi esiste solo in quello stato, quindi non serve una
+  condizione separata). Riusa lo stesso componente `SelettoreCategoria`
+  già esistente per gli altri due selettori di categoria nello stesso
+  file, nessun nuovo componente.
+
 ### Note di continuità per M10 (milestone finale — utile per lavoro futuro)
 
 - **Nessuna migrazione Prisma necessaria**: M10 non introduce nuovi modelli,

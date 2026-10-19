@@ -9,8 +9,10 @@ import {
   schemaDomandaAmmissione,
   schemaApprovazioneDomanda,
   schemaRigettoDomanda,
+  schemaModificaCategoriaDomanda,
   type DatiDomandaAmmissione,
   type DatiApprovazioneDomanda,
+  type DatiModificaCategoriaDomanda,
 } from "@/lib/validazioni/socio";
 
 export type EsitoAzioneSocio = { errore: string } | { successo: true };
@@ -52,6 +54,54 @@ export async function creaDomandaAmmissione(
     entita: "DomandaAmmissione",
     entitaId: domanda.id,
     azione: "creazione",
+  });
+
+  revalidatePath("/soci");
+  return { successo: true };
+}
+
+/**
+ * Corregge la categoria proposta su una domanda ancora "in valutazione"
+ * (es. errore di inserimento, o la persona chiede di essere valutata per
+ * un'altra categoria prima che il direttivo decida) — mai su una domanda
+ * già approvata o respinta, che riflette una decisione già presa e
+ * registrata (il dialog di approvazione permette comunque di scegliere
+ * una categoria diversa da quella proposta al momento della delibera, per
+ * quel caso resta sufficiente). `DomandaAmmissione` non è un'entità
+ * append-only per specifica (§7.1 elenca solo Socio/SocioStato/
+ * MovimentoPrimaNota/Ricevuta/AuditLog), quindi un aggiornamento in-place
+ * è corretto qui: resta comunque un'azione tracciata in audit.
+ */
+export async function modificaCategoriaDomandaAmmissione(
+  domandaId: string,
+  datiGrezzi: DatiModificaCategoriaDomanda
+): Promise<EsitoAzioneSocio> {
+  const utente = await richiediRuolo(["amministratore", "segreteria"]);
+
+  const risultato = schemaModificaCategoriaDomanda.safeParse(datiGrezzi);
+  if (!risultato.success) {
+    return { errore: risultato.error.issues[0]?.message ?? "Dati non validi." };
+  }
+
+  const domanda = await prisma.domandaAmmissione.findUnique({ where: { id: domandaId } });
+  if (!domanda || domanda.deletedAt) {
+    return { errore: "Domanda di ammissione non trovata." };
+  }
+  if (domanda.stato !== "in_valutazione") {
+    return { errore: "Si può correggere la categoria solo su una domanda ancora in valutazione." };
+  }
+
+  await prisma.domandaAmmissione.update({
+    where: { id: domandaId },
+    data: { categoriaProposta: risultato.data.categoriaProposta },
+  });
+
+  await registraAudit({
+    utenteId: utente.id,
+    entita: "DomandaAmmissione",
+    entitaId: domandaId,
+    azione: "modifica_categoria_proposta",
+    diff: { categoriaProposta: { da: domanda.categoriaProposta, a: risultato.data.categoriaProposta } },
   });
 
   revalidatePath("/soci");

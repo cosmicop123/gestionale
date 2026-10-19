@@ -57,7 +57,11 @@ Da **Soci e tesseramenti** puoi:
   modificabili in qualunque momento dalla scheda della persona.
 - **Avviare una domanda di ammissione a socio** dalla scheda della persona,
   indicando la categoria proposta (ordinario, sostenitore, onorario,
-  junior).
+  junior). Finché la domanda è "in valutazione" puoi **correggere la
+  categoria proposta** in qualunque momento con il link "Modifica" accanto
+  alla categoria (utile per un errore di inserimento, o se la persona
+  chiede di essere valutata per un'altra categoria prima della delibera);
+  una volta approvata o respinta, la domanda non è più modificabile.
 - **Approvare o respingere la domanda**: l'approvazione richiede la data
   della delibera del direttivo e assegna automaticamente il numero di
   libro soci (mai riutilizzato, nemmeno se in futuro il socio dovesse

@@ -39,6 +39,17 @@ test("flusso critico: anagrafica persona, ammissione a socio, tessera, libro soc
   await page.getByRole("button", { name: "Avvia domanda di ammissione" }).click();
   await page.getByRole("button", { name: "Registra domanda" }).click();
   await expect(page.getByText("in valutazione", { exact: true })).toBeVisible();
+  await expect(page.getByText("Ordinario")).toBeVisible();
+
+  // 2bis. Corregge la categoria proposta prima della delibera (es. errore di inserimento)
+  await page.getByRole("button", { name: "Modifica" }).click();
+  await page.getByLabel("Nuova categoria proposta").click();
+  await page.getByRole("option", { name: "Junior" }).click();
+  await page.getByRole("button", { name: "Salva" }).click();
+  await expect(page.getByText("Categoria proposta aggiornata.")).toBeVisible();
+  // .first(): il dialog appena chiuso può restare montato per l'animazione di uscita, con il suo
+  // <select> nativo nascosto che duplicherebbe il match (stesso principio già annotato in CLAUDE.md).
+  await expect(page.getByText("Junior").first()).toBeVisible();
 
   // 3. Approva: assegna il numero di libro soci e crea il Socio
   await page.getByRole("button", { name: "Approva (delibera direttivo)" }).click();

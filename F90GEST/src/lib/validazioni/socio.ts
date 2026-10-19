@@ -20,6 +20,12 @@ export const schemaDomandaAmmissione = z.object({
 
 export type DatiDomandaAmmissione = z.infer<typeof schemaDomandaAmmissione>;
 
+export const schemaModificaCategoriaDomanda = z.object({
+  categoriaProposta: z.enum(CATEGORIE_SOCIO, { message: "Selezionare una categoria." }),
+});
+
+export type DatiModificaCategoriaDomanda = z.infer<typeof schemaModificaCategoriaDomanda>;
+
 export const schemaApprovazioneDomanda = z.object({
   dataDelibera: z.string().min(1, "Inserire la data della delibera."),
   dataDecorrenza: z.string().min(1, "Inserire la data di decorrenza dell'iscrizione."),
